@@ -71,13 +71,13 @@ const TRADEOFF_ESTILO: Record<
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel ClimaBrasil — Simulador de Políticas Climáticas" },
+      { title: "Painel ClimaSim — Simulador de Políticas Climáticas" },
       {
         name: "description",
         content:
           "Simule como mudanças em financiamento, governança e execução de políticas públicas afetam o índice climático de estados e municípios brasileiros ao longo de 4 anos.",
       },
-      { property: "og:title", content: "Painel ClimaBrasil — Simulador de Políticas Climáticas" },
+      { property: "og:title", content: "Painel ClimaSim — Simulador de Políticas Climáticas" },
       {
         property: "og:description",
         content:
@@ -190,7 +190,7 @@ function Painel() {
         <div className="absolute inset-0 canopy opacity-90" />
         <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary-foreground backdrop-blur">
-            <Leaf className="size-3.5" /> Painel ClimaBrasil
+            <Leaf className="size-3.5" /> Painel ClimaSim
           </span>
           <h1 className="mt-6 max-w-3xl text-4xl leading-tight text-primary-foreground md:text-6xl">
             O clima responde às escolhas de política pública.
@@ -510,7 +510,7 @@ function Painel() {
       </div>
 
       <footer className="canopy mt-8 py-10 text-center text-sm text-primary-foreground/80">
-        Painel ClimaBrasil · simulação preditiva de políticas climáticas
+        Painel ClimaSim · simulação preditiva de políticas climáticas
       </footer>
     </main>
   );

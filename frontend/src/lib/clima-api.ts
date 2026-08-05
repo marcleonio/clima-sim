@@ -114,7 +114,7 @@ export type SimulacaoResponse = {
   listaTradeOffs: TradeOffResponse[];
 };
 
-const BASE_KEY = "climabrasil:apiBaseUrl";
+const BASE_KEY = "climasim:apiBaseUrl";
 export const DEFAULT_BASE_URL = "http://localhost:8080";
 
 export function getApiBaseUrl(): string {
