@@ -37,6 +37,9 @@ import {
   type EntityScores,
   type SimulacaoResponse,
   type Source,
+  TIPOS_ENTIDADE,
+  normalizarTipoEntidade,
+  type TipoEntidade,
 } from "@/lib/clima-api";
 import type { TradeOffTipo } from "@/lib/clima-api";
 
@@ -110,6 +113,7 @@ const EIXOS = [
 
 function Painel() {
   const [entidades, setEntidades] = useState<EntityScores[]>([]);
+  const [esfera, setEsfera] = useState<TipoEntidade>("Estadual");
   const [nome, setNome] = useState<string>("");
   const [ajustes, setAjustes] = useState({
     ajusteFinanciamento: 15,
@@ -130,35 +134,45 @@ function Painel() {
     const { data } = await listarEntidades();
     const lista = Object.values(data);
     setEntidades(lista);
-    setNome((atual) => atual || (lista[0]?.entityName ?? ""));
   }, []);
 
   useEffect(() => {
     void carregar();
   }, [carregar]);
 
+  const entidadesDaEsfera = useMemo(
+    () => entidades.filter((e) => normalizarTipoEntidade(e.entityType) === esfera),
+    [entidades, esfera],
+  );
+
+  useEffect(() => {
+    if (!entidadesDaEsfera.some((e) => e.entityName === nome)) {
+      setNome(entidadesDaEsfera[0]?.entityName ?? (esfera === "Federal" ? "Brasil" : ""));
+    }
+  }, [entidadesDaEsfera, esfera, nome]);
+
   const entidade = useMemo(
-    () => entidades.find((e) => e.entityName === nome),
-    [entidades, nome],
+    () => entidadesDaEsfera.find((e) => e.entityName === nome),
+    [entidadesDaEsfera, nome],
   );
 
   const simular = useCallback(async () => {
-    if (!entidade) return;
+    if (!entidade && !(esfera === "Federal" && nome)) return;
     setLoading(true);
     const { data, source: s } = await recalcular({
-      tipoEntidade: entidade.entityType,
-      nomeEntidade: entidade.entityName,
+      tipoEntidade: esfera,
+      nomeEntidade: entidade?.entityName ?? nome,
       ...ajustes,
     });
     setSim(data);
     setSource(s);
     setLoading(false);
-  }, [entidade, ajustes]);
+  }, [entidade, esfera, nome, ajustes]);
 
   useEffect(() => {
-    if (entidade) void simular();
+    if (nome) void simular();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entidade?.entityName]);
+  }, [nome, esfera]);
 
   const variacao = sim?.resumo.variacaoPercentual ?? 0;
 
@@ -229,19 +243,55 @@ function Painel() {
             </CardHeader>
             <CardContent className="space-y-8">
               <div className="grid gap-2">
-                <Label>Estado ou município</Label>
-                <Select value={nome} onValueChange={setNome}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma entidade" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {entidades.map((e) => (
-                      <SelectItem key={e.entityName} value={e.entityName}>
-                        {e.entityName} · {e.entityType === "ESTADO" ? "Estado" : "Município"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Esfera da entidade</Label>
+                <div className="grid grid-cols-3 gap-2 rounded-xl bg-secondary p-1">
+                  {TIPOS_ENTIDADE.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setEsfera(t)}
+                      aria-pressed={esfera === t}
+                      className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                        esfera === t
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>
+                  {esfera === "Federal"
+                    ? "Órgão ou ente federal"
+                    : esfera === "Estadual"
+                      ? "Estado"
+                      : "Município"}
+                </Label>
+                {entidadesDaEsfera.length ? (
+                  <Select value={nome} onValueChange={setNome}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma entidade" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {entidadesDaEsfera.map((e) => (
+                        <SelectItem key={e.entityName} value={e.entityName}>
+                          {e.entityName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={nome}
+                    onChange={(ev) => setNome(ev.target.value)}
+                    onBlur={() => void simular()}
+                    placeholder={esfera === "Federal" ? "Brasil" : "Nome da entidade"}
+                  />
+                )}
               </div>
 
               {EIXOS.map(({ key, nome: n, desc, Icon }) => (
@@ -382,7 +432,7 @@ function Painel() {
               <CardTitle className="text-xl">Projeção ano a ano do mandato</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {sim.metadados.entidadeSelecionada} ·{" "}
-                {sim.metadados.tipoEntidade === "ESTADO" ? "Estado" : "Município"}
+                {normalizarTipoEntidade(sim.metadados.tipoEntidade)}
               </p>
             </CardHeader>
             <CardContent>

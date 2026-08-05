@@ -10,8 +10,66 @@ export type EntityScores = {
   scoreGeralMedia: number;
 };
 
+export type TipoEntidade = "Federal" | "Estadual" | "Municipal";
+
+export const TIPOS_ENTIDADE: TipoEntidade[] = ["Federal", "Estadual", "Municipal"];
+
+// Unidades da federação (26 estados + Distrito Federal). Usadas para corrigir
+// classificações incorretas vindas da base (ex.: DF marcado como município).
+const UFS = [
+  "Acre",
+  "Alagoas",
+  "Amapá",
+  "Amazonas",
+  "Bahia",
+  "Ceará",
+  "Distrito Federal",
+  "Espírito Santo",
+  "Goiás",
+  "Maranhão",
+  "Mato Grosso",
+  "Mato Grosso do Sul",
+  "Minas Gerais",
+  "Pará",
+  "Paraíba",
+  "Paraná",
+  "Pernambuco",
+  "Piauí",
+  "Rio de Janeiro",
+  "Rio Grande do Norte",
+  "Rio Grande do Sul",
+  "Rondônia",
+  "Roraima",
+  "Santa Catarina",
+  "São Paulo",
+  "Sergipe",
+  "Tocantins",
+];
+
+const chaveNome = (n: string) =>
+  n
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s*\(.*\)\s*/g, "")
+    .trim()
+    .toLowerCase();
+
+const UFS_KEYS = new Set(UFS.map(chaveNome));
+
+export function ehUnidadeFederativa(nome: string): boolean {
+  return UFS_KEYS.has(chaveNome(nome));
+}
+
+// A listagem de entidades pode devolver rótulos legados (ESTADO/MUNICIPIO).
+export function normalizarTipoEntidade(valor: string | undefined): TipoEntidade {
+  const v = (valor ?? "").toUpperCase();
+  if (v.startsWith("FED")) return "Federal";
+  if (v.startsWith("MUNIC")) return "Municipal";
+  return "Estadual";
+}
+
 export type SimulacaoRequest = {
-  tipoEntidade: string;
+  tipoEntidade: TipoEntidade;
   nomeEntidade: string;
   ajusteFinanciamento: number;
   ajusteGovernanca: number;
@@ -87,20 +145,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 /* ---------------- Demonstração local (usada quando a API não responde) ---------------- */
 
 const DEMO: EntityScores[] = [
-  ["Acre", "ESTADO", 42.1, 51.4, 47.8],
-  ["Amazonas", "ESTADO", 55.3, 49.0, 52.6],
-  ["Pará", "ESTADO", 58.9, 44.2, 50.1],
-  ["Bahia", "ESTADO", 63.5, 61.8, 59.4],
-  ["Ceará", "ESTADO", 66.2, 70.1, 64.7],
-  ["Minas Gerais", "ESTADO", 71.4, 65.9, 68.3],
-  ["São Paulo", "ESTADO", 78.6, 74.2, 76.0],
-  ["Paraná", "ESTADO", 69.8, 72.5, 67.1],
-  ["Rio Grande do Sul", "ESTADO", 67.3, 68.4, 63.9],
-  ["Belém", "MUNICIPIO", 48.7, 45.6, 43.2],
-  ["Manaus", "MUNICIPIO", 52.4, 47.9, 46.8],
-  ["Recife", "MUNICIPIO", 59.1, 63.7, 57.5],
-  ["Curitiba", "MUNICIPIO", 74.9, 79.3, 76.8],
-  ["São Paulo (capital)", "MUNICIPIO", 81.2, 77.6, 79.4],
+  ["Brasil (União)", "Federal", 61.7, 58.3, 56.9],
+  ["Acre", "Estadual", 42.1, 51.4, 47.8],
+  ["Amazonas", "Estadual", 55.3, 49.0, 52.6],
+  ["Pará", "Estadual", 58.9, 44.2, 50.1],
+  ["Bahia", "Estadual", 63.5, 61.8, 59.4],
+  ["Ceará", "Estadual", 66.2, 70.1, 64.7],
+  ["Minas Gerais", "Estadual", 71.4, 65.9, 68.3],
+  ["São Paulo", "Estadual", 78.6, 74.2, 76.0],
+  ["Paraná", "Estadual", 69.8, 72.5, 67.1],
+  ["Rio Grande do Sul", "Estadual", 67.3, 68.4, 63.9],
+  ["Distrito Federal", "Estadual", 72.6, 70.8, 69.5],
+  ["Belém", "Municipal", 48.7, 45.6, 43.2],
+  ["Manaus", "Municipal", 52.4, 47.9, 46.8],
+  ["Recife", "Municipal", 59.1, 63.7, 57.5],
+  ["Curitiba", "Municipal", 74.9, 79.3, 76.8],
+  ["São Paulo", "Municipal", 81.2, 77.6, 79.4],
 ].map(([entityName, entityType, f, g, p], i) => ({
   entityId: i + 1,
   entityName: entityName as string,
@@ -114,7 +174,7 @@ const DEMO: EntityScores[] = [
 const clamp = (n: number) => Math.max(0, Math.min(100, Number(n.toFixed(1))));
 
 export function demoEntidades(): Record<string, EntityScores> {
-  return Object.fromEntries(DEMO.map((e) => [e.entityName, e]));
+  return Object.fromEntries(DEMO.map((e) => [`${e.entityType}:${e.entityName}`, e]));
 }
 
 // Coeficientes OLS ilustrativos: cada eixo responde ao próprio ajuste e sofre
@@ -243,16 +303,42 @@ export function demoSimular(reqBody: SimulacaoRequest): SimulacaoResponse {
 
 export type Source = "api" | "demo";
 
+// Nomes de UF que também nomeiam um município real (capital homônima).
+const UFS_COM_MUNICIPIO_HOMONIMO = new Set(["sao paulo", "rio de janeiro"].map(chaveNome));
+
+// Corrige a esfera e o nome exibido de cada entidade retornada pela base
+// (ex.: Distrito Federal vinha marcado como município) e remove duplicatas.
+export function sanearEntidades(data: Record<string, EntityScores>): Record<string, EntityScores> {
+  const vistos = new Set<string>();
+  const saneadas: [string, EntityScores][] = [];
+
+  for (const [chave, e] of Object.entries(data)) {
+    const nome = (e.entityName ?? chave)
+      .replace(/\s*\((capital|munic[ií]pio|estado|uf)\)\s*/i, "")
+      .trim();
+    let tipo = normalizarTipoEntidade(e.entityType);
+    if (tipo === "Municipal" && ehUnidadeFederativa(nome) && !UFS_COM_MUNICIPIO_HOMONIMO.has(chaveNome(nome))) {
+      tipo = "Estadual";
+    }
+    const id = `${tipo}:${chaveNome(nome)}`;
+    if (vistos.has(id)) continue;
+    vistos.add(id);
+    saneadas.push([id, { ...e, entityName: nome, entityType: tipo }]);
+  }
+
+  return Object.fromEntries(saneadas);
+}
+
 export async function listarEntidades(): Promise<{
   data: Record<string, EntityScores>;
   source: Source;
 }> {
   try {
     const data = await req<Record<string, EntityScores>>("/api/v1/simulacao/entidades");
-    if (data && Object.keys(data).length) return { data, source: "api" };
+    if (data && Object.keys(data).length) return { data: sanearEntidades(data), source: "api" };
     throw new Error("vazio");
   } catch {
-    return { data: demoEntidades(), source: "demo" };
+    return { data: sanearEntidades(demoEntidades()), source: "demo" };
   }
 }
 
