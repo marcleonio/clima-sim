@@ -1,21 +1,46 @@
 package com.climaton.climautils.dto.request;
 
+import com.climaton.climautils.dto.enums.TipoEntidade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Payload para execução de simulação com percentuais de variação por eitxo")
 public record SimulacaoRequest(
-    @Schema(description = "Dados para envio da simulação com percentuais de variação")
-    String tipoEntidade,        // "Estado", "Município" ou "Federal"
-    @Schema(description = "Nome do Estado ou Município", example = "Acre")
-    String nomeEntidade,        // ex: "Acre", "Belo Horizonte"
 
-    // Parâmetros dos Sliders do Front (-100 a +100 ou percentuais)
-    @Schema(description = "Ajuste percentual no Financiamento Climático (-100 a +100)", example = "15.0")
-    Double ajusteFinanciamento,  // ex: +15.0 (Aumentar 15% em captação/orçamento)
-    @Schema(description = "Ajuste percentual na Governança & Transparência (-100 a +100)", example = "-5.0")
-    Double ajusteGovernanca,     // ex: -5.0  (Reduzir 5% em transparência/conselhos)
-    @Schema(description = "Ajuste percentual na Execução de Políticas Públicas (-100 a +100)", example = "20.0")
-    Double ajustePoliticas       // ex: +20.0 (Aumentar 20% na execução de projetos)
+    @Schema(
+        description = "Esfera ou nível da entidade (Federal, Estadual ou Municipal)",
+        example = "Estadual",
+        implementation = TipoEntidade.class
+    )
+    TipoEntidade tipoEntidade,
 
-    // double scoreFinanciamento,
-    // Double scoreGovernanca
+    @Schema(
+        description = "Nome do Estado ou Município. Para entidade Federal, pode enviar 'Brasil' ou o nome do órgão",
+        example = "Acre"
+    )
+    String nomeEntidade,
+
+    @Schema(
+        description = "Ajuste percentual no Financiamento Climático",
+        example = "15.0",
+        minimum = "-100.0",
+        maximum = "100.0"
+    )
+    Double ajusteFinanciamento,
+
+    @Schema(
+        description = "Ajuste percentual na Governança & Transparência",
+        example = "-5.0",
+        minimum = "-100.0",
+        maximum = "100.0"
+    )
+    Double ajusteGovernanca,
+
+    @Schema(
+        description = "Ajuste percentual na Execução de Políticas Públicas",
+        example = "20.0",
+        minimum = "-100.0",
+        maximum = "100.0"
+    )
+    Double ajustePoliticas
+
 ) {}

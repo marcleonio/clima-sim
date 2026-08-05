@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.springframework.stereotype.Service;
 
+import com.climaton.climautils.dto.ModificadoresEntidade;
 import com.climaton.climautils.dto.enums.TipoTradeOff;
 import com.climaton.climautils.dto.request.SimulacaoRequest;
 import com.climaton.climautils.dto.response.DataSetLinhaResponse;
@@ -70,8 +71,14 @@ public class RegressionEngineService {
         String key = request.nomeEntidade() != null ? request.nomeEntidade().toLowerCase() : "acre";
         EntityScores base = database.getOrDefault(key, database.values().iterator().next());
 
-        // 0. Converter notas base para escala 0-100 (multiplicando por 20)
+        // Capturar o tipo da entidade (seja do request ou da entidade carregada do banco)
+        String tipoEntidadeStr = request.tipoEntidade() != null
+                ? request.tipoEntidade().name()
+                : base.getEntityType();
 
+        ModificadoresEntidade mod = obterModificadoresEntidade(tipoEntidadeStr);
+
+        // 0. Converter notas base para escala 0-100 (multiplicando por 20)
         double baseFin100 = base.getScoreFinanciamento() <= 1.0
                 ? base.getScoreFinanciamento() * 100.0
                 : (base.getScoreFinanciamento() / 5.0) * 100.0;
@@ -93,16 +100,16 @@ public class RegressionEngineService {
 
         // A. IMPACTO EM FINANCIAMENTO
         // + Gov atrai fundos | - Pol perde repasses por inexecução | + Pol sem Fin gera déficit
-        double efeitoFin = adjFinReq 
-                + (adjGovReq > 0 ? adjGovReq * 0.25 : adjGovReq * 0.40) 
-                + (adjPolReq < 0 ? adjPolReq * 0.35 : 0.0) 
+        double efeitoFin = adjFinReq
+                + (adjGovReq > 0 ? adjGovReq * mod.pesoGovFin() : adjGovReq * 0.40)
+                + (adjPolReq < 0 ? adjPolReq * 0.35 : 0.0)
                 + (adjPolReq > 10.0 && adjFinReq <= 0 ? adjPolReq * -0.30 : 0.0);
 
         // B. IMPACTO EM GOVERNANÇA
         // - Pol desacelera transparência/engajamento | + Pol sem Gov gera atropelo burocrático | - Fin corta equipe técnica
-        double efeitoGov = adjGovReq 
-                + (adjPolReq < 0 ? adjPolReq * 0.20 : 0.0) 
-                + (adjFinReq < 0 ? adjFinReq * 0.15 : 0.0) 
+        double efeitoGov = adjGovReq
+                + (adjPolReq < 0 ? adjPolReq * 0.20 : 0.0)
+                + (adjFinReq < 0 ? adjFinReq * 0.15 : 0.0)
                 + (adjPolReq > 20.0 && adjGovReq < 10.0 ? (adjPolReq - adjGovReq) * -0.25 : 0.0);
 
         // C. IMPACTO EM EXECUÇÃO DE POLÍTICAS
@@ -112,13 +119,13 @@ public class RegressionEngineService {
 
         if (adjPolReq < 0) {
             // Corte direto + agravante de corte orçamentário se houver
-            efeitoPol = adjPolReq + (efeitoFin < 0 ? efeitoFin * 0.20 : 0.0);
+            efeitoPol = (adjPolReq + (efeitoFin < 0 ? efeitoFin * 0.20 : 0.0)) * mod.inerciaPol();
         } else if (adjPolReq > suporteEstrutural + 15.0) {
             // Teto operacional dinâmico (rendimento decrescente por falta de suporte)
-            efeitoPol = suporteEstrutural + 15.0 + ((adjPolReq - (suporteEstrutural + 15.0)) * 0.20);
+            efeitoPol = (suporteEstrutural + 15.0 + ((adjPolReq - (suporteEstrutural + 15.0)) * 0.20)) * mod.inerciaPol();
             log.info("Ajuste de Políticas limitado de {}% para {}% por limitação de Financiamento/Governança.", adjPolReq, efeitoPol);
         } else {
-            efeitoPol = adjPolReq;
+            efeitoPol = adjPolReq * mod.inerciaPol();
         }
 
         // 2. APLICAR MULTIPLICADORES DE RENDIMENTO REALISTA
@@ -131,8 +138,8 @@ public class RegressionEngineService {
         double scoreGovProjetado = Math.min(100.0, Math.max(0.0, baseGov100 * multGov));
 
         // Predição OLS normalizada (convertendo para 0-5 apenas durante o cálculo da equação de regressão)
-        double scorePolCalculadoBase = betaCoefficientsPol[0] 
-                + (betaCoefficientsPol[1] * (scoreFinProjetado / 20.0)) 
+        double scorePolCalculadoBase = betaCoefficientsPol[0]
+                + (betaCoefficientsPol[1] * (scoreFinProjetado / 20.0))
                 + (betaCoefficientsPol[2] * (scoreGovProjetado / 20.0));
 
         double polImpulsionado = scorePolCalculadoBase * 1.20;
@@ -167,15 +174,25 @@ public class RegressionEngineService {
         ));
 
         // 6. LISTA DE TRADE-OFFS DINÂMICOS
-        List<TradeOffResponse> tradeOffs = calcularTradeOffs(request, efeitoFin, efeitoGov, efeitoPol);
+        List<TradeOffResponse> tradeOffs = calcularTradeOffs(request, efeitoFin, efeitoGov, efeitoPol,tipoEntidadeStr);
 
         MetadadosResponse metadados = new MetadadosResponse(base.getEntityName(), base.getEntityType(), "2026-08-04");
         return new SimulacaoResponse(metadados, resumo, kpis, seriesTemporais, tradeOffs);
     }
 
-    private List<TradeOffResponse> calcularTradeOffs( SimulacaoRequest req, double efeitoFin,  double efeitoGov,  double efeitoPol) {
+    private List<TradeOffResponse> calcularTradeOffs( SimulacaoRequest req, double efeitoFin,  double efeitoGov,  double efeitoPol, String tipoEntidade) {
 
         List<TradeOffResponse> list = new ArrayList<>();
+
+        // Regra específica para o Ente Federal em desaceleração de governança
+        if ("FEDERAL".equalsIgnoreCase(tipoEntidade) && req.ajustePoliticas() > 30.0 && req.ajusteGovernanca() < 10.0) {
+            list.add(new TradeOffResponse(
+                TipoTradeOff.ALERTA,
+                "Governança Federal",
+                "Gargalo de Articulação Federativa",
+                "Acelerar metas federais sem aporte equivalente em Governança gera entraves na repassagem de verbas para os estados/municípios e reduz a efetividade no território."
+            ));
+        }
 
         // 1. Alertar sobre perdas/déficit em Financiamento
         if (efeitoFin < 0) {
@@ -284,5 +301,26 @@ public class RegressionEngineService {
             // Para reduções, garantimos que o impacto seja perceptível sem zerar tudo de cara
             return Math.max(0.1, 1.0 + (percentualAjuste / 100.0) * 0.75);
         }
+    }
+
+    private ModificadoresEntidade obterModificadoresEntidade(String tipoEntidade) {
+        if (tipoEntidade == null) {
+            return new ModificadoresEntidade(0.25, 1.0, 1.0);
+        }
+
+        return switch (tipoEntidade.toUpperCase()) {
+            case "FEDERAL" -> new ModificadoresEntidade(
+                    0.35, // Governança atrai mais fundos (maior capilaridade)
+                    0.85, // Maior inércia para converter políticas em resultados imediatos
+                    0.75  // Maior burocracia (retornos decrescentes mais acentuados)
+            );
+            case "ESTADUAL" -> new ModificadoresEntidade(0.28, 0.95, 0.90);
+            case "MUNICIPAL" -> new ModificadoresEntidade(
+                    0.20, // Menos atratividade de fundos globais diretos por governança
+                    1.10, // Ação mais rápida no território (menor inércia)
+                    1.00  // Execução direta
+            );
+            default -> new ModificadoresEntidade(0.25, 1.0, 1.0);
+        };
     }
 }
