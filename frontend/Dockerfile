@@ -12,6 +12,8 @@ RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
 COPY . .
 
+ENV NITRO_PRESET=node-server
+
 # Executa o build do TanStack Start / Vite
 RUN pnpm build
 
