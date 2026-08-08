@@ -95,7 +95,26 @@ public class CsvLoaderService {
         double avgGov = countGov > 0 ? sumGov / countGov : 2.5;
         double avgPol = countPol > 0 ? sumPol / countPol : 2.5;
 
-        return new EntityScores(entityId, entityType, entityName, avgFin, avgGov, avgPol);
+        // SE TODAS AS ENTIDADES FOREM CONVERTIDAS PARA 0-100 AQUI:
+        double normFin = normalizarPara100(avgFin);
+        double normGov = normalizarPara100(avgGov);
+        double normPol = normalizarPara100(avgPol);
+
+        return new EntityScores(entityId, entityType, entityName, normFin, normGov, normPol);
+    }
+
+    /**
+     * Converte qualquer escala de nota vinda do CSV (0-1, 0-5 ou 0-100) para a régua unificada 0-100.
+     */
+    private double normalizarPara100(double valor) {
+        if (valor <= 0) return 0.0;
+        if (valor <= 1.0) return round(valor * 100.0); // ex: 0.7448 -> 74.48
+        if (valor <= 5.0) return round((valor / 5.0) * 100.0); // ex: 2.5 -> 50.0
+        return round(valor); // Já está em 0-100
+    }
+
+    private double round(double val) {
+        return Math.round(val * 100.0) / 100.0;
     }
 
     private double parseDoubleOrZero(String val) {

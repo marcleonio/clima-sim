@@ -100,21 +100,41 @@ export type TradeOffResponse = {
   descricaoAmigavel: string;
 };
 
+export type StatusAbsorcao = "MATURIDADE_ALTA" | "GARGALO_DETECTADO";
+export type MaturidadeRelativa = "ACIMA_DA_MEDIA" | "DENTRO_DA_MEDIA" | "ABAIXO_DA_MEDIA";
+export type NivelRiscoOperacional = "BAIXO" | "MEDIO" | "ALERTA" | "CRITICO";
+
+export type FatorAlavancagem = {
+  variacaoInvestimentoPct: number;
+  impactoGeralEstimadoPct: number;
+  mensagemFormatada: string;
+};
+
+export type ResumoScoreResponse = {
+  scoreGeralAtual: number;
+  scoreGeralProjetado: number;
+  variacaoPercentual: number;
+  statusGeral: string;
+  taxaAbsorcaoAbsorvida: number;
+  statusAbsorcao: StatusAbsorcao;
+  roiClimaticoEstimado: number;
+  fatorAlavancagem: FatorAlavancagem;
+  maturidadeRelativa: MaturidadeRelativa;
+  nivelRiscoOperacional: NivelRiscoOperacional;
+  riscoDescontinuidadePct: number;
+  mensagemDiagnostico: string;
+};
+
 export type SimulacaoResponse = {
   metadados: { entidadeSelecionada: string; tipoEntidade: string; dataSimulacao: string };
-  resumo: {
-    scoreGeralAtual: number;
-    scoreGeralProjetado: number;
-    variacaoPercentual: number;
-    statusGeral: string;
-    mensagemDiagnostico: string;
-  };
+  resumo: ResumoScoreResponse;
   kpisEixos: KpiEixoResponse[];
   seriesTemporais: { labelsAnos: string[]; linhasGrafico: DataSetLinhaResponse[] };
   listaTradeOffs: TradeOffResponse[];
 };
 
-const BASE_KEY = "climasim:apiBaseUrl";
+
+const BASE_KEY = "climabrasil:apiBaseUrl";
 export const DEFAULT_BASE_URL = "http://localhost:8080";
 
 export function getApiBaseUrl(): string {
@@ -251,6 +271,29 @@ export function demoSimular(reqBody: SimulacaoRequest): SimulacaoResponse {
         "Os ajustes atuais mantêm os três eixos em equilíbrio, sem trade-offs relevantes detectados pelo modelo.",
     });
 
+  // Capacidade de absorção: quanto da ampliação financeira a governança consegue processar.
+  const absorcao = clamp(
+    45 + proj.gov * 0.55 - Math.max(0, aF - aG) * 0.35 + Math.min(proj.pol, 100) * 0.08,
+  );
+  const statusAbsorcao: StatusAbsorcao = absorcao >= 70 ? "MATURIDADE_ALTA" : "GARGALO_DETECTADO";
+
+  const roi = Number(Math.max(0.2, (0.6 + (absorcao / 100) * 1.1) * (proj.pol / 60)).toFixed(2));
+  const impactoAlavancagem = Number((10 * roi).toFixed(1));
+
+  const mediaBase = DEMO.reduce((s, e) => s + e.scoreGeralMedia, 0) / DEMO.length;
+  const maturidadeRelativa: MaturidadeRelativa =
+    projGeral > mediaBase * 1.05
+      ? "ACIMA_DA_MEDIA"
+      : projGeral < mediaBase * 0.95
+        ? "ABAIXO_DA_MEDIA"
+        : "DENTRO_DA_MEDIA";
+
+  const riscoPct = clamp(
+    Math.max(0, 100 - absorcao) * 0.5 + Math.max(0, -aG) * 0.6 + Math.max(0, aP - aF) * 0.4,
+  );
+  const nivelRisco: NivelRiscoOperacional =
+    riscoPct >= 60 ? "CRITICO" : riscoPct >= 40 ? "ALERTA" : riscoPct >= 20 ? "MEDIO" : "BAIXO";
+
   return {
     metadados: {
       entidadeSelecionada: base.entityName,
@@ -262,6 +305,17 @@ export function demoSimular(reqBody: SimulacaoRequest): SimulacaoResponse {
       scoreGeralProjetado: projGeral,
       variacaoPercentual: variacao,
       statusGeral: variacao > 3 ? "POSITIVO" : variacao < -3 ? "CRITICO" : "ESTAVEL",
+      taxaAbsorcaoAbsorvida: absorcao,
+      statusAbsorcao,
+      roiClimaticoEstimado: roi,
+      fatorAlavancagem: {
+        variacaoInvestimentoPct: 10,
+        impactoGeralEstimadoPct: impactoAlavancagem,
+        mensagemFormatada: `Cada +10% em Financiamento gera +${impactoAlavancagem}% de impacto se apoiado por Governança.`,
+      },
+      maturidadeRelativa,
+      nivelRiscoOperacional: nivelRisco,
+      riscoDescontinuidadePct: riscoPct,
       mensagemDiagnostico:
         variacao > 3
           ? `Ao fim dos 4 anos, ${base.entityName} avança ${variacao}% no índice climático geral.`
@@ -269,6 +323,7 @@ export function demoSimular(reqBody: SimulacaoRequest): SimulacaoResponse {
             ? `O cenário simulado deteriora o índice climático de ${base.entityName} em ${Math.abs(variacao)}%.`
             : `O cenário simulado mantém ${base.entityName} praticamente estável ao longo do mandato.`,
     },
+
     kpisEixos: kpis,
     seriesTemporais: {
       labelsAnos: anos,

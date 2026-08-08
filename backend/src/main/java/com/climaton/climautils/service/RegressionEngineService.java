@@ -9,7 +9,11 @@ import java.util.Map;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.springframework.stereotype.Service;
 
+import com.climaton.climautils.dto.FatorAlavancagem;
 import com.climaton.climautils.dto.ModificadoresEntidade;
+import com.climaton.climautils.dto.enums.MaturidadeRelativa;
+import com.climaton.climautils.dto.enums.NivelRiscoOperacional;
+import com.climaton.climautils.dto.enums.StatusAbsorcao;
 import com.climaton.climautils.dto.enums.TipoTradeOff;
 import com.climaton.climautils.dto.request.SimulacaoRequest;
 import com.climaton.climautils.dto.response.DataSetLinhaResponse;
@@ -49,9 +53,10 @@ public class RegressionEngineService {
 
         int i = 0;
         for (EntityScores e : entities) {
-            y[i] = e.getScorePoliticasPublicas();
-            x[i][0] = e.getScoreFinanciamento();
-            x[i][1] = e.getScoreGovernanca();
+            // Se o modelo espera os valores na faixa 0-5 ou 0-1 para os coeficientes:
+            y[i] = e.getScorePoliticasPublicas() / 20.0;
+            x[i][0] = e.getScoreFinanciamento() / 20.0;
+            x[i][1] = e.getScoreGovernanca() / 20.0;
             i++;
         }
 
@@ -78,18 +83,10 @@ public class RegressionEngineService {
 
         ModificadoresEntidade mod = obterModificadoresEntidade(tipoEntidadeStr);
 
-        // 0. Converter notas base para escala 0-100 (multiplicando por 20)
-        double baseFin100 = base.getScoreFinanciamento() <= 1.0
-                ? base.getScoreFinanciamento() * 100.0
-                : (base.getScoreFinanciamento() / 5.0) * 100.0;
-
-        double baseGov100 = base.getScoreGovernanca() <= 1.0
-                ? base.getScoreGovernanca() * 100.0
-                : (base.getScoreGovernanca() / 5.0) * 100.0;
-
-        double basePol100 = base.getScorePoliticasPublicas() <= 1.0
-                ? base.getScorePoliticasPublicas() * 100.0
-                : (base.getScorePoliticasPublicas() / 5.0) * 100.0;
+        // 0. Converter notas base para escala 0-100 utilizando a função padronizada
+        double baseFin100 = base.getScoreFinanciamento();
+        double baseGov100 = base.getScoreGovernanca();
+        double basePol100 = base.getScorePoliticasPublicas();
 
         // Captura das solicitações do usuário (-100% a +100%)
         double adjFinReq = request.ajusteFinanciamento();
@@ -101,15 +98,15 @@ public class RegressionEngineService {
         // A. IMPACTO EM FINANCIAMENTO
         // + Gov atrai fundos | - Pol perde repasses por inexecução | + Pol sem Fin gera déficit
         double efeitoFin = adjFinReq
-                + (adjGovReq > 0 ? adjGovReq * mod.pesoGovFin() : adjGovReq * 0.40)
-                + (adjPolReq < 0 ? adjPolReq * 0.35 : 0.0)
+                + (adjGovReq > 0 ? adjGovReq * mod.pesoGovFin() : adjGovReq * 0.50)
+                + (adjPolReq < 0 ? adjPolReq * 0.40 : 0.0)
                 + (adjPolReq > 10.0 && adjFinReq <= 0 ? adjPolReq * -0.30 : 0.0);
 
         // B. IMPACTO EM GOVERNANÇA
         // - Pol desacelera transparência/engajamento | + Pol sem Gov gera atropelo burocrático | - Fin corta equipe técnica
         double efeitoGov = adjGovReq
+                + (adjFinReq < 0 ? adjFinReq * 0.45 : 0.0) // Corte financeiro afeta diretamente estruturas de controle
                 + (adjPolReq < 0 ? adjPolReq * 0.20 : 0.0)
-                + (adjFinReq < 0 ? adjFinReq * 0.15 : 0.0)
                 + (adjPolReq > 20.0 && adjGovReq < 10.0 ? (adjPolReq - adjGovReq) * -0.25 : 0.0);
 
         // C. IMPACTO EM EXECUÇÃO DE POLÍTICAS
@@ -117,15 +114,20 @@ public class RegressionEngineService {
         double suporteEstrutural = (efeitoFin + efeitoGov) / 2.0;
         double efeitoPol;
 
+        // Penalidade direta de arrasto se Financiamento ou Governança caírem (mesmo que adjPolReq seja 0 ou positivo)
+        double arrastoFinanceiro = efeitoFin < 0 ? efeitoFin * 0.70 : 0.0; // Corte no dinheiro seca projetos
+        double arrastoBurocratico = efeitoGov < 0 ? efeitoGov * 0.35 : 0.0; // Queda na governança vaza/desperdiça recursos
+
         if (adjPolReq < 0) {
-            // Corte direto + agravante de corte orçamentário se houver
-            efeitoPol = (adjPolReq + (efeitoFin < 0 ? efeitoFin * 0.20 : 0.0)) * mod.inerciaPol();
+            // Corte direto em políticas somado ao estrangulamento orçamentário/institucional
+            efeitoPol = (adjPolReq + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
         } else if (adjPolReq > suporteEstrutural + 15.0) {
             // Teto operacional dinâmico (rendimento decrescente por falta de suporte)
-            efeitoPol = (suporteEstrutural + 15.0 + ((adjPolReq - (suporteEstrutural + 15.0)) * 0.20)) * mod.inerciaPol();
-            log.info("Ajuste de Políticas limitado de {}% para {}% por limitação de Financiamento/Governança.", adjPolReq, efeitoPol);
+            efeitoPol = (suporteEstrutural + 15.0 + ((adjPolReq - (suporteEstrutural + 15.0)) * 0.20) + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
+            log.info("Ajuste de Políticas limitado para {}% por gargalo em Financiamento/Governança.", efeitoPol);
         } else {
-            efeitoPol = adjPolReq * mod.inerciaPol();
+            // Crescimento normal do usuário afetado por eventuais quedas em Financiamento/Governança
+            efeitoPol = (adjPolReq + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
         }
 
         // 2. APLICAR MULTIPLICADORES DE RENDIMENTO REALISTA
@@ -150,12 +152,40 @@ public class RegressionEngineService {
         double scoreGeralAtual = round((baseFin100 + baseGov100 + basePol100) / 3.0);
         double scoreGeralProjetado = round((scoreFinProjetado + scoreGovProjetado + scorePolProjetado) / 3.0);
         double varPct = round(((scoreGeralProjetado - scoreGeralAtual) / scoreGeralAtual) * 100.0);
-
         String statusGeral = varPct >= 5.0 ? "POSITIVO" : (varPct <= -5.0 ? "CRITICO" : "ALERTA");
-        String mensagemDiagnostico = gerarMensagemDiagnostico(varPct, request);
+
+        // KPI 2: Capacidade de Absorção
+        double taxaAbsorcao = calcularTaxaAbsorcao(scoreGovProjetado, adjFinReq);
+        StatusAbsorcao statusAbsorcao = taxaAbsorcao >= 75.0 ? StatusAbsorcao.MATURIDADE_ALTA : StatusAbsorcao.GARGALO_DETECTADO;
+
+        // KPI 3: ROI e Alavancagem
+        double roiClimatico = calcularRoiClimatico(scoreGovProjetado, scorePolProjetado, scoreFinProjetado);
+        double impactoEstimado = round(roiClimatico * 10.0);
+        FatorAlavancagem fatorAlavancagem = FatorAlavancagem.criar(impactoEstimado);
+
+        // KPI 4: Maturidade Relativa x Ente Federativo
+        MaturidadeRelativa maturidadeRelativa = calcularMaturidadeRelativa(scoreGeralProjetado, tipoEntidadeStr);
+
+        // KPI 5: Risco Preditivo de Descontinuidade
+        double riscoDescontinuidadePct = calcularRiscoDescontinuidade(adjPolReq, adjFinReq, scoreGovProjetado);
+        NivelRiscoOperacional nivelRisco = determinarNivelRisco(riscoDescontinuidadePct, taxaAbsorcao);
+
+        // Diagnóstico
+        String mensagemDiagnostico = gerarMensagemDiagnostico(varPct, taxaAbsorcao,nivelRisco);
 
         ResumoScoreResponse resumo = new ResumoScoreResponse(
-                scoreGeralAtual, scoreGeralProjetado, varPct, statusGeral, mensagemDiagnostico
+                scoreGeralAtual,
+                scoreGeralProjetado,
+                varPct,
+                statusGeral,
+                taxaAbsorcao,
+                statusAbsorcao,
+                roiClimatico,
+                fatorAlavancagem,
+                maturidadeRelativa,
+                nivelRisco,
+                riscoDescontinuidadePct,
+                mensagemDiagnostico
         );
 
         // 4. KPIS DOS EIXOS (Todos padronizados de 0 a 100)
@@ -247,6 +277,109 @@ public class RegressionEngineService {
         return list;
     }
 
+    /**
+     * Calcula quanto do financiamento a estrutura de governança consegue absorver.
+     * Quanto maior a governança, maior a capacidade de execução orçamentária.
+     */
+    private double calcularTaxaAbsorcao(double scoreGovProjetado, double ajusteFinanciamentoReq) {
+        // Base de absorção guiada pelo nível de governança (0 a 100)
+        double absorcaoBase = 50.0 + (scoreGovProjetado * 0.45); // Varia aproximadamente de 50% a 95%
+
+        // Penalidade se o usuário exigir uma injeção de verba rápida (+Financiamento) sem Governança proporcional
+        if (ajusteFinanciamentoReq > 30.0 && scoreGovProjetado < 60.0) {
+            double estresseBurocratico = (ajusteFinanciamentoReq - 30.0) * 0.3;
+            absorcaoBase -= estresseBurocratico;
+        }
+
+        return round(Math.min(98.0, Math.max(30.0, absorcaoBase)));
+    }
+
+    /**
+     * Calcula o retorno climático projetado (ROI).
+     * Relaciona a eficiência da entrega de políticas públicas e governança com o financiamento.
+     */
+    private double calcularRoiClimatico(double gov, double pol, double fin) {
+        if (fin <= 0) return 1.0;
+
+        // O ROI é maximizado quando Governança e Execução de Políticas acompanham o Financiamento
+        double eficienciamedia = (gov + pol) / 2.0;
+        double roiCalculado = (eficienciamedia / fin) * 1.25;
+
+        // Limita o ROI em uma faixa realista entre 0.5x e 2.8x
+        return round(Math.min(2.8, Math.max(0.5, roiCalculado)));
+    }
+
+    private MaturidadeRelativa calcularMaturidadeRelativa(double scoreGeralProjetado, String tipoEntidade) {
+        double mediaReferencia = "FEDERAL".equalsIgnoreCase(tipoEntidade) ? 70.0 : 55.0;
+        
+        if (scoreGeralProjetado > mediaReferencia + 8.0) {
+            return MaturidadeRelativa.ACIMA_DA_MEDIA;
+        } else if (scoreGeralProjetado < mediaReferencia - 8.0) {
+            return MaturidadeRelativa.ABAIXO_DA_MEDIA;
+        }
+        return MaturidadeRelativa.DENTRO_DA_MEDIA;
+    }
+
+    private double calcularRiscoDescontinuidade(double adjPol, double adjFin, double gov) {
+        double riscoBase = 15.0; // Risco residual natural de gestão
+
+        // Se houver corte em políticas públicas, o risco dispara
+        if (adjPol < 0) {
+            riscoBase += Math.abs(adjPol) * 1.2;
+        }
+        // Se houver corte financeiro, também afeta a continuidade
+        if (adjFin < 0) {
+            riscoBase += Math.abs(adjFin) * 0.8;
+        }
+        // Baixa governança aumenta a chance de paralisia de programas
+        if (gov < 50.0) {
+            riscoBase += (50.0 - gov) * 0.5;
+        }
+
+        return round(Math.min(95.0, Math.max(5.0, riscoBase)));
+    }
+
+    /**
+     * Determina o nível de risco de execução com base no estresse entre aporte x absorção.
+     */
+    private NivelRiscoOperacional determinarNivelRisco(double riscoDescontinuidadePct, double taxaAbsorcao) {
+        if (riscoDescontinuidadePct > 60.0 || taxaAbsorcao < 45.0) {
+            return NivelRiscoOperacional.CRITICO;
+        }
+        if (riscoDescontinuidadePct > 35.0 || taxaAbsorcao < 65.0) {
+            return NivelRiscoOperacional.ALERTA;
+        }
+        if (riscoDescontinuidadePct > 20.0) {
+            return NivelRiscoOperacional.MEDIO;
+        }
+        return NivelRiscoOperacional.BAIXO;
+    }
+
+    
+
+    /**
+     * Sobrecarga de diagnóstico enriquecida com insights sobre absorção e risco.
+     */
+    private String gerarMensagemDiagnostico(double varPct, double taxaAbsorcao, NivelRiscoOperacional nivelRisco) {
+        StringBuilder sb = new StringBuilder();
+
+        if (varPct > 0) {
+            sb.append(String.format("A simulação projeta um ganho de %.1f%% no índice climático. ", varPct));
+        } else if (varPct < 0) {
+            sb.append(String.format("Atenção: A simulação indica uma queda de %.1f%% no indicador geral. ", Math.abs(varPct)));
+        } else {
+            sb.append("A simulação mantém a maturidade climática estável. ");
+        }
+
+        if (NivelRiscoOperacional.CRITICO.equals(nivelRisco) || NivelRiscoOperacional.ALERTA.equals(nivelRisco)) {
+            sb.append(String.format("Gargalo detectado: Taxa de absorção de apenas %.1f%% devido à baixa governança.", taxaAbsorcao));
+        } else {
+            sb.append(String.format("Capacidade de absorção orçamentária satisfatória (%.1f%%).", taxaAbsorcao));
+        }
+
+        return sb.toString();
+    }
+
     private String getTendencia(double novo, double antigo) {
         if (novo > antigo + 0.1) return "ALTA";
         if (novo < antigo - 0.1) return "QUEDA";
@@ -262,31 +395,29 @@ public class RegressionEngineService {
         return lista;
     }
 
-    private String gerarMensagemDiagnostico(double varPct, SimulacaoRequest req) {
-        if (varPct > 0) return "A simulação projeta um ganho de " + round(varPct) + "% no índice de resposta climática para o mandato.";
-        if (varPct < 0) return "Atenção: A configuração atual resulta em uma queda projetada de " + round(Math.abs(varPct)) + "% nos indicadores climáticos.";
-        return "A simulação mantém o cenário atual de maturidade climática sem variações expressivas.";
-    }
-
     private double round(double val) {
         return Math.round(val * 100.0) / 100.0;
     }
 
-    // Em vez de retornar 0.9 ou 4.5, normalize para 0 a 100:
+   /**
+     * Converte valores base do CSV (seja em escala 0-1.0 ou 0-5.0) para a escala percentual 0-100.
+     */
     private double paraEscalaCem(double valorOriginal) {
         if (valorOriginal <= 0) return 0.0;
 
-        // Se o seu CSV tem notas de 0 a 1 (ex: 0.84), multiplicamos por 100 direto:
+        double valorConvertido;
         if (valorOriginal <= 1.0) {
-            return Math.round(valorOriginal * 100.0 * 10.0) / 10.0; // 0.84 vira 84.0
+            // Escala de 0.0 a 1.0 (ex: 0.84 -> 84.0)
+            valorConvertido = valorOriginal * 100.0;
+        } else if (valorOriginal <= 5.0) {
+            // Escala de 0.0 a 5.0 (ex: 4.2 -> 84.0)
+            valorConvertido = (valorOriginal / 5.0) * 100.0;
+        } else {
+            // Já está em escala 0-100
+            valorConvertido = valorOriginal;
         }
 
-        // Se o seu CSV tem notas de 0 a 5 (ex: 0.84 em 5.0), multiplicamos por 200/5 para calibrar a régua:
-        // Exemplo: 0.84 / 1.0 * 80.0 = 67.2
-        double notaMinimaBase = 50.0; // Garante que nenhum município/estado comece zerado
-        double notaMapeada = notaMinimaBase + (valorOriginal * 10.0); // Eleva a nota base para a faixa dos 60-80
-
-        return Math.min(100.0, Math.round(notaMapeada * 10.0) / 10.0);
+        return Math.min(100.0, Math.round(valorConvertido * 10.0) / 10.0);
     }
 
     private double calcularFatorAjusteRealista(double percentualAjuste) {

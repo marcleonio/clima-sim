@@ -1,185 +1,114 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
   Banknote,
-  Landmark,
+  BarChart3,
+  Building2,
+  Gauge,
   Leaf,
-  Minus,
-  RefreshCw,
+  LineChart,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   TriangleAlert,
+  Users,
 } from "lucide-react";
 
 import heroImg from "@/assets/hero-floresta.jpg";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TrendChart } from "@/components/clima/trend-chart";
-import {
-  DEFAULT_BASE_URL,
-  getApiBaseUrl,
-  listarEntidades,
-  recalcular,
-  setApiBaseUrl,
-  type EntityScores,
-  type SimulacaoResponse,
-  type Source,
-  TIPOS_ENTIDADE,
-  normalizarTipoEntidade,
-  type TipoEntidade,
-} from "@/lib/clima-api";
-import type { TradeOffTipo } from "@/lib/clima-api";
-
-// Enum TradeOffResponse.tipo da API: GANHO | PERDA | ALERTA | NEUTRO
-const TRADEOFF_ESTILO: Record<
-  TradeOffTipo,
-  { rotulo: string; classe: string; icone: typeof Leaf }
-> = {
-  GANHO: { rotulo: "Ganho", classe: "bg-primary/10 text-primary", icone: Leaf },
-  PERDA: {
-    rotulo: "Perda",
-    classe: "bg-destructive/10 text-destructive",
-    icone: ArrowDownRight,
-  },
-  ALERTA: {
-    rotulo: "Alerta",
-    classe: "bg-accent/20 text-accent-foreground",
-    icone: TriangleAlert,
-  },
-  NEUTRO: {
-    rotulo: "Neutro",
-    classe: "bg-secondary text-secondary-foreground",
-    icone: Landmark,
-  },
-};
-
-
+import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel ClimaSim — Simulador de Políticas Climáticas" },
+      { title: "ClimaSim — Simulador preditivo de políticas climáticas" },
       {
         name: "description",
         content:
-          "Simule como mudanças em financiamento, governança e execução de políticas públicas afetam o índice climático de estados e municípios brasileiros ao longo de 4 anos.",
+          "ClimaSim transforma os dados do Painel ClimaBrasil em uma engine preditiva: simule financiamento, governança e execução de políticas e veja o impacto climático projetado do mandato.",
       },
-      { property: "og:title", content: "Painel ClimaSim — Simulador de Políticas Climáticas" },
+      { property: "og:title", content: "ClimaSim — Simulador preditivo de políticas climáticas" },
       {
         property: "og:description",
         content:
-          "Projeções de 4 anos e trade-offs entre financiamento climático, governança e execução de políticas públicas.",
+          "De dados estáticos de auditoria a uma ferramenta viva de planejamento público, com projeções até 2028 e alertas de trade-off.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://policy-effect-simulator.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://policy-effect-simulator.lovable.app/" }],
   }),
-  component: Painel,
+  component: Landing,
 });
 
 const EIXOS = [
   {
-    key: "ajusteFinanciamento" as const,
-    nome: "Financiamento Climático",
-    desc: "Orçamento e captação de recursos verdes",
     Icon: Banknote,
+    titulo: "Financiamento climático",
+    texto:
+      "Orçamento, captação de recursos verdes e capacidade real de absorver o repasse disponível.",
   },
   {
-    key: "ajusteGovernanca" as const,
-    nome: "Governança & Transparência",
-    desc: "Instituições, dados abertos e controle",
     Icon: ShieldCheck,
+    titulo: "Governança & transparência",
+    texto: "Instituições, dados abertos, controle interno e maturidade institucional do ente.",
   },
   {
-    key: "ajustePoliticas" as const,
-    nome: "Execução de Políticas",
-    desc: "Entrega efetiva de programas climáticos",
     Icon: ScrollText,
+    titulo: "Execução de políticas",
+    texto: "Entrega efetiva dos programas climáticos e continuidade ao longo do mandato.",
   },
 ];
 
-function Painel() {
-  const [entidades, setEntidades] = useState<EntityScores[]>([]);
-  const [esfera, setEsfera] = useState<TipoEntidade>("Estadual");
-  const [nome, setNome] = useState<string>("");
-  const [ajustes, setAjustes] = useState({
-    ajusteFinanciamento: 15,
-    ajusteGovernanca: 0,
-    ajustePoliticas: 20,
-  });
-  const [sim, setSim] = useState<SimulacaoResponse | null>(null);
-  const [source, setSource] = useState<Source>("demo");
-  const [loading, setLoading] = useState(false);
-  const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
-  const painelRef = useRef<HTMLDivElement>(null);
+const FUNCIONALIDADES = [
+  {
+    Icon: Gauge,
+    titulo: "Sliders de cenário",
+    texto: "Variação percentual de -100% a +100% em cada eixo, com recálculo imediato.",
+  },
+  {
+    Icon: LineChart,
+    titulo: "Projeção do mandato",
+    texto: "Séries temporais interpoladas ano a ano até o fim do ciclo de governo.",
+  },
+  {
+    Icon: TriangleAlert,
+    titulo: "Trade-offs automáticos",
+    texto: "Matriz de impacto cruzado com alertas de ganho, perda, risco e efeito neutro.",
+  },
+  {
+    Icon: BarChart3,
+    titulo: "KPIs de decisão",
+    texto: "Absorção, ROI climático, maturidade relativa e risco de descontinuidade.",
+  },
+];
 
-  useEffect(() => {
-    setBaseUrl(getApiBaseUrl());
-  }, []);
+const PUBLICOS = [
+  {
+    Icon: Building2,
+    titulo: "Gestores públicos",
+    texto:
+      "Estados, municípios e União simulam cenários orçamentários antes de comprometer o PPA e a LOA.",
+  },
+  {
+    Icon: ShieldCheck,
+    titulo: "Órgãos de controle",
+    texto:
+      "TCU e TCEs comparam o planejado com a capacidade real de execução de cada ente federativo.",
+  },
+  {
+    Icon: Users,
+    titulo: "Sociedade civil",
+    texto:
+      "Controle social acompanha se o investimento anunciado se converte em impacto climático medível.",
+  },
+];
 
-  const carregar = useCallback(async () => {
-    const { data } = await listarEntidades();
-    const lista = Object.values(data);
-    setEntidades(lista);
-  }, []);
-
-  useEffect(() => {
-    void carregar();
-  }, [carregar]);
-
-  const entidadesDaEsfera = useMemo(
-    () => entidades.filter((e) => normalizarTipoEntidade(e.entityType) === esfera),
-    [entidades, esfera],
-  );
-
-  useEffect(() => {
-    if (!entidadesDaEsfera.some((e) => e.entityName === nome)) {
-      setNome(entidadesDaEsfera[0]?.entityName ?? (esfera === "Federal" ? "Brasil" : ""));
-    }
-  }, [entidadesDaEsfera, esfera, nome]);
-
-  const entidade = useMemo(
-    () => entidadesDaEsfera.find((e) => e.entityName === nome),
-    [entidadesDaEsfera, nome],
-  );
-
-  const simular = useCallback(async () => {
-    if (!entidade && !(esfera === "Federal" && nome)) return;
-    setLoading(true);
-    const { data, source: s } = await recalcular({
-      tipoEntidade: esfera,
-      nomeEntidade: entidade?.entityName ?? nome,
-      ...ajustes,
-    });
-    setSim(data);
-    setSource(s);
-    setLoading(false);
-  }, [entidade, esfera, nome, ajustes]);
-
-  useEffect(() => {
-    if (nome) void simular();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nome, esfera]);
-
-  const variacao = sim?.resumo.variacaoPercentual ?? 0;
-
+function Landing() {
   return (
-    <main className="min-h-screen">
-      {/* Hero */}
-      <header className="relative isolate overflow-hidden">
+    <main>
+      <section className="relative isolate overflow-hidden">
         <img
           src={heroImg}
           alt="Vista aérea de floresta tropical brasileira cortada por um rio ao amanhecer"
@@ -190,30 +119,36 @@ function Painel() {
         <div className="absolute inset-0 canopy opacity-90" />
         <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary-foreground backdrop-blur">
-            <Leaf className="size-3.5" /> Painel ClimaSim
+            <Leaf className="size-3.5" /> ClimaSim · Climate Simulator
           </span>
           <h1 className="mt-6 max-w-3xl text-4xl leading-tight text-primary-foreground md:text-6xl">
-            O clima responde às escolhas de política pública.
+            O Painel ClimaBrasil mostra o passado. O ClimaSim projeta o próximo mandato.
           </h1>
           <p className="mt-5 max-w-2xl text-base text-primary-foreground/85 md:text-lg">
-            Ajuste financiamento, governança e execução de políticas e veja, ano a ano, o impacto
-            projetado sobre o índice climático de estados e municípios — com os trade-offs que cada
-            decisão carrega.
+            Plataforma de inteligência preditiva que consome os dados oficiais de auditoria
+            climática e responde à pergunta que todo gestor faz: onde aplicar o próximo milhão de
+            reais para gerar o maior impacto climático?
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
+            <Button size="lg" variant="secondary" asChild>
+              <Link to="/simulador">
+                Abrir o simulador <ArrowRight className="size-4" />
+              </Link>
+            </Button>
             <Button
               size="lg"
-              variant="secondary"
-              onClick={() => painelRef.current?.scrollIntoView({ behavior: "smooth" })}
+              variant="ghost"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+              asChild
             >
-              Simular um mandato <ArrowRight className="size-4" />
+              <Link to="/metodologia">Ver metodologia</Link>
             </Button>
           </div>
           <dl className="mt-14 grid max-w-3xl grid-cols-2 gap-6 md:grid-cols-4">
             {[
               ["3", "eixos analisados"],
               ["4", "anos de projeção"],
-              [String(entidades.length || "—"), "entes federativos"],
+              ["27+", "entes federativos"],
               ["OLS", "modelo preditivo"],
             ].map(([v, l]) => (
               <div key={l}>
@@ -223,295 +158,119 @@ function Painel() {
             ))}
           </dl>
         </div>
-      </header>
+      </section>
 
-      <div ref={painelRef} className="mx-auto max-w-6xl scroll-mt-8 px-6 py-16">
-        {/* Controles */}
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <Card className="card-soft border-border/70">
-            <CardHeader className="flex-row items-center justify-between gap-4">
-              <CardTitle className="text-xl">Cenário de mandato</CardTitle>
-              <span
-                className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                  source === "api"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-earth/15 text-earth"
-                }`}
-              >
-                {source === "api" ? "API conectada" : "Modo demonstração"}
-              </span>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              <div className="grid gap-2">
-                <Label>Esfera da entidade</Label>
-                <div className="grid grid-cols-3 gap-2 rounded-xl bg-secondary p-1">
-                  {TIPOS_ENTIDADE.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setEsfera(t)}
-                      aria-pressed={esfera === t}
-                      className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                        esfera === t
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>
-                  {esfera === "Federal"
-                    ? "Órgão ou ente federal"
-                    : esfera === "Estadual"
-                      ? "Estado"
-                      : "Município"}
-                </Label>
-                {entidadesDaEsfera.length ? (
-                  <Select value={nome} onValueChange={setNome}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma entidade" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {entidadesDaEsfera.map((e) => (
-                        <SelectItem key={e.entityName} value={e.entityName}>
-                          {e.entityName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    value={nome}
-                    onChange={(ev) => setNome(ev.target.value)}
-                    onBlur={() => void simular()}
-                    placeholder={esfera === "Federal" ? "Brasil" : "Nome da entidade"}
-                  />
-                )}
-              </div>
-
-              {EIXOS.map(({ key, nome: n, desc, Icon }) => (
-                <div key={key} className="space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 grid size-9 place-items-center rounded-xl bg-secondary text-primary">
-                        <Icon className="size-4" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold">{n}</p>
-                        <p className="text-xs text-muted-foreground">{desc}</p>
-                      </div>
-                    </div>
-                    <span className="font-display text-lg tabular-nums">
-                      {ajustes[key] > 0 ? "+" : ""}
-                      {ajustes[key]}%
-                    </span>
+      {/* Problema */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              O problema público
+            </p>
+            <h2 className="mt-3 text-3xl md:text-4xl">
+              Diagnóstico não é planejamento.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Os dados do Painel ClimaBrasil são estáticos e diagnósticos: mostram como a gestão
+              está hoje. Isso dificulta que gestores públicos definam metas realistas e impede que a
+              sociedade preveja o efeito de cortes ou aumentos de investimento nas políticas
+              climáticas.
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              O ClimaSim fecha essa lacuna: pega o mesmo dataset oficial como baseline e o
+              transforma em cenários futuros calculáveis, com trade-offs explícitos e evidência
+              matemática no lugar do achismo.
+            </p>
+          </div>
+          <div className="grid gap-4">
+            {EIXOS.map(({ Icon, titulo, texto }) => (
+              <Card key={titulo} className="card-soft border-border/70">
+                <CardContent className="flex gap-4 pt-6">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{titulo}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{texto}</p>
                   </div>
-                  <Slider
-                    value={[ajustes[key]]}
-                    min={-100}
-                    max={100}
-                    step={1}
-                    onValueChange={([v]) => setAjustes((a) => ({ ...a, [key]: v ?? 0 }))}
-                  />
-                </div>
-              ))}
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Button onClick={() => void simular()} disabled={loading || !entidade}>
-                  <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-                  Recalcular projeções
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() =>
-                    setAjustes({ ajusteFinanciamento: 0, ajusteGovernanca: 0, ajustePoliticas: 0 })
-                  }
-                >
-                  Zerar ajustes
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Resumo */}
-          <Card className="card-soft canopy border-0 text-primary-foreground">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold uppercase tracking-widest opacity-80">
-                Índice climático geral
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex items-end gap-3">
-                <span className="font-display text-6xl leading-none">
-                  {sim?.resumo.scoreGeralProjetado.toFixed(1) ?? "—"}
-                </span>
-                <span className="pb-2 text-sm opacity-75">
-                  de {sim?.resumo.scoreGeralAtual.toFixed(1) ?? "—"} hoje
-                </span>
-              </div>
-              <div
-                className={`inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold ${
-                  variacao < -0.5 ? "opacity-90" : ""
-                }`}
-              >
-                {variacao > 0.5 ? (
-                  <ArrowUpRight className="size-4" />
-                ) : variacao < -0.5 ? (
-                  <ArrowDownRight className="size-4" />
-                ) : (
-                  <Minus className="size-4" />
-                )}
-                {variacao > 0 ? "+" : ""}
-                {variacao}% em 4 anos
-              </div>
-              <p className="text-sm leading-relaxed opacity-90">
-                {sim?.resumo.mensagemDiagnostico ?? "Selecione uma entidade para simular."}
-              </p>
-              <div className="rounded-xl bg-primary-foreground/10 p-3 text-xs opacity-80">
-                Status geral:{" "}
-                <strong className="font-semibold">{sim?.resumo.statusGeral ?? "—"}</strong>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* KPIs por eixo */}
-        <section className="mt-10 grid gap-6 md:grid-cols-3">
-          {sim?.kpisEixos.map((kpi) => {
-            const delta = kpi.scoreProjetado - kpi.scoreAtual;
-            return (
-              <Card key={kpi.chaveEixo} className="card-soft border-border/70">
-                <CardContent className="space-y-4 pt-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">{kpi.nomeExibicao}</p>
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: kpi.corSugestaoHex }}
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span className="font-display text-4xl leading-none">
-                      {kpi.scoreProjetado.toFixed(1)}
-                    </span>
-                    <span
-                      className={`pb-1 text-sm font-semibold ${
-                        delta >= 0 ? "text-primary" : "text-destructive"
-                      }`}
-                    >
-                      {delta >= 0 ? "+" : ""}
-                      {delta.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${kpi.scoreProjetado}%`,
-                        backgroundColor: kpi.corSugestaoHex,
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Hoje {kpi.scoreAtual.toFixed(1)} · tendência {kpi.tendencia.toLowerCase()}
-                  </p>
                 </CardContent>
               </Card>
-            );
-          })}
-        </section>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* Série temporal */}
-        {sim && (
-          <Card className="card-soft mt-10 border-border/70">
-            <CardHeader>
-              <CardTitle className="text-xl">Projeção ano a ano do mandato</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {sim.metadados.entidadeSelecionada} ·{" "}
-                {normalizarTipoEntidade(sim.metadados.tipoEntidade)}
+      {/* Funcionalidades */}
+      <section className="border-y border-border/60 bg-secondary/40">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            O que a plataforma faz
+          </p>
+          <h2 className="mt-3 text-3xl md:text-4xl">Funcionalidades do MVP</h2>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {FUNCIONALIDADES.map(({ Icon, titulo, texto }) => (
+              <Card key={titulo} className="card-soft h-full border-border/70">
+                <CardContent className="space-y-3 pt-6">
+                  <span className="grid size-10 place-items-center rounded-xl leaf-gradient text-primary-foreground">
+                    <Icon className="size-5" />
+                  </span>
+                  <p className="font-semibold">{titulo}</p>
+                  <p className="text-sm text-muted-foreground">{texto}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="mt-10">
+            <Button asChild>
+              <Link to="/simulador">
+                Simular um mandato <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Público */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Para quem
+        </p>
+        <h2 className="mt-3 text-3xl md:text-4xl">Três públicos, uma mesma evidência</h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {PUBLICOS.map(({ Icon, titulo, texto }) => (
+            <Card key={titulo} className="card-soft h-full border-border/70">
+              <CardContent className="space-y-3 pt-6">
+                <Icon className="size-6 text-primary" />
+                <p className="font-semibold">{titulo}</p>
+                <p className="text-sm text-muted-foreground">{texto}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-6xl px-6 pb-20">
+        <Card className="card-soft canopy border-0 text-primary-foreground">
+          <CardContent className="grid gap-6 py-12 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="min-w-0">
+              <Sparkles className="size-6" />
+              <h2 className="mt-3 text-3xl text-primary-foreground">
+                Dados estáticos de auditoria viram ferramenta viva de planejamento.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm opacity-85">
+                Pronto para ser acoplado ao portal do TCU/ClimaBrasil como apoio à elaboração de PPA
+                e LOA dos entes federativos.
               </p>
-            </CardHeader>
-            <CardContent>
-              <TrendChart series={sim.seriesTemporais} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Trade-offs */}
-        {sim && (
-          <section className="mt-10">
-            <h2 className="text-2xl">Trade-offs identificados</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Toda escolha climática desloca recursos de outro eixo. O modelo destaca os efeitos
-              cruzados mais relevantes deste cenário.
-            </p>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {sim.listaTradeOffs.map((t, i) => {
-                const estilo = TRADEOFF_ESTILO[t.tipo] ?? TRADEOFF_ESTILO["NEUTRO"];
-                const Icone = estilo.icone;
-                return (
-                <Card key={i} className="card-soft border-border/70">
-                  <CardContent className="flex gap-4 pt-6">
-                    <span
-                      className={`grid size-10 shrink-0 place-items-center rounded-xl ${estilo.classe}`}
-                    >
-                      <Icone className="size-5" />
-                    </span>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {estilo.rotulo} · {t.eixoAfetado}
-                      </p>
-                      <p className="mt-1 font-semibold">{t.titulo}</p>
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                        {t.descricaoAmigavel}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                );
-              })}
             </div>
-          </section>
-        )}
-
-        {/* Conexão com a API */}
-        <section className="mt-14">
-          <Card className="border-dashed border-border">
-            <CardContent className="flex flex-col gap-4 pt-6 md:flex-row md:items-end">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="api">Endereço da ClimaUtils API</Label>
-                <Input
-                  id="api"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder={DEFAULT_BASE_URL}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enquanto a API não responder, o painel usa um motor de simulação local
-                  equivalente para demonstração.
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setApiBaseUrl(baseUrl);
-                  void carregar().then(() => simular());
-                }}
-              >
-                Conectar
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
-
-      <footer className="canopy mt-8 py-10 text-center text-sm text-primary-foreground/80">
-        Painel ClimaSim · simulação preditiva de políticas climáticas
-      </footer>
+            <Button size="lg" variant="secondary" asChild>
+              <Link to="/impacto">
+                Ver impacto esperado <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
     </main>
   );
 }
