@@ -115,3 +115,8 @@ cd frontend
 pnpm install
 pnpm dev
 ```
+```bash
+cd frontend
+npm i
+npm run dev
+```
