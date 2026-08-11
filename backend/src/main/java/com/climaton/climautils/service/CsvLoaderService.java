@@ -59,6 +59,8 @@ public class CsvLoaderService {
     }
 
     private void processarGrupos(Map<String, List<CSVRecord>> agrupado) {
+        List<EntityScores> todosOsEstados = new ArrayList<>();
+        
         for (List<CSVRecord> records : agrupado.values()) {
             if (records.isEmpty()) continue;
 
@@ -68,7 +70,53 @@ public class CsvLoaderService {
 
             EntityScores scores = calcularScoreEntidade(entityId, entityType, entityName, records);
             databaseEmMemoria.put(entityName.toLowerCase(), scores);
+            
+            // Coletar apenas Estados REAIS (excluir agregações prévias como "Estados consolidados")
+            // para calcular a agregação Federal como média dos 26 UFs + DF
+            if ("Estado".equalsIgnoreCase(entityType) 
+                && !"Estados consolidados".equalsIgnoreCase(entityName)) {
+                todosOsEstados.add(scores);
+            }
         }
+        
+        // Criar agregação Federal calculando a média ponderada de todos os Estados
+        // Representa o cenário climático nacional como consolidação dos governos subnacionais
+        if (!todosOsEstados.isEmpty()) {
+            EntityScores scoreFederal = calcularScoreFederal(todosOsEstados);
+            databaseEmMemoria.put("brasil", scoreFederal);
+            log.info(">>> Agregação Federal (Brasil) calculada com {} estados. Scores: Financiamento={}, Governança={}, Políticas={}",
+                    todosOsEstados.size(),
+                    String.format("%.2f", scoreFederal.getScoreFinanciamento()),
+                    String.format("%.2f", scoreFederal.getScoreGovernanca()),
+                    String.format("%.2f", scoreFederal.getScorePoliticasPublicas()));
+        }
+    }
+    
+    /**
+     * Calcula o score federal agregando os scores de todos os estados.
+     * Usa média aritmética simples, podendo evoluir para média ponderada por população.
+     * 
+     * @param estados Lista de EntityScores dos estados individuais
+     * @return EntityScores com tipo "Federal" e nome "Brasil", representando o cenário nacional
+     */
+    private EntityScores calcularScoreFederal(List<EntityScores> estados) {
+        double avgFin = 0, avgGov = 0, avgPol = 0;
+        
+        for (EntityScores e : estados) {
+            avgFin += e.getScoreFinanciamento();
+            avgGov += e.getScoreGovernanca();
+            avgPol += e.getScorePoliticasPublicas();
+        }
+        
+        int qtd = estados.size();
+        return new EntityScores(
+            0.0,
+            "Federal",
+            "Brasil",
+            avgFin / qtd,
+            avgGov / qtd,
+            avgPol / qtd
+        );
     }
 
     private EntityScores calcularScoreEntidade(Double entityId, String entityType, String entityName, List<CSVRecord> records) {
