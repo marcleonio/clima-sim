@@ -358,11 +358,10 @@ export function demoSimular(reqBody: SimulacaoRequest): SimulacaoResponse {
 
 export type Source = "api" | "demo";
 
-// Nomes de UF que também nomeiam um município real (capital homônima).
-const UFS_COM_MUNICIPIO_HOMONIMO = new Set(["sao paulo", "rio de janeiro"].map(chaveNome));
-
 // Corrige a esfera e o nome exibido de cada entidade retornada pela base
 // (ex.: Distrito Federal vinha marcado como município) e remove duplicatas.
+// As unidades da federação precisam continuar aparecendo na esfera estadual, mesmo
+// quando o nome coincida com uma capital/município homônimo (ex.: São Paulo).
 export function sanearEntidades(data: Record<string, EntityScores>): Record<string, EntityScores> {
   const vistos = new Set<string>();
   const saneadas: [string, EntityScores][] = [];
@@ -372,7 +371,7 @@ export function sanearEntidades(data: Record<string, EntityScores>): Record<stri
       .replace(/\s*\((capital|munic[ií]pio|estado|uf)\)\s*/i, "")
       .trim();
     let tipo = normalizarTipoEntidade(e.entityType);
-    if (tipo === "Municipal" && ehUnidadeFederativa(nome) && !UFS_COM_MUNICIPIO_HOMONIMO.has(chaveNome(nome))) {
+    if (tipo === "Municipal" && ehUnidadeFederativa(nome)) {
       tipo = "Estadual";
     }
     const id = `${tipo}:${chaveNome(nome)}`;
@@ -381,7 +380,9 @@ export function sanearEntidades(data: Record<string, EntityScores>): Record<stri
     saneadas.push([id, { ...e, entityName: nome, entityType: tipo }]);
   }
 
-  return Object.fromEntries(saneadas);
+  return Object.fromEntries(
+    saneadas.sort(([, a], [, b]) => a.entityName.localeCompare(b.entityName, "pt-BR")),
+  );
 }
 
 export async function listarEntidades(): Promise<{

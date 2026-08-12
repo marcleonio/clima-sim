@@ -152,7 +152,10 @@ function Simulador() {
   }, [carregar]);
 
   const entidadesDaEsfera = useMemo(
-    () => entidades.filter((e) => normalizarTipoEntidade(e.entityType) === esfera),
+    () =>
+      entidades
+        .filter((e) => normalizarTipoEntidade(e.entityType) === esfera)
+        .sort((a, b) => a.entityName.localeCompare(b.entityName, "pt-BR")),
     [entidades, esfera],
   );
 
