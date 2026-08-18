@@ -126,10 +126,27 @@ public class CsvLoaderService {
 
         for (CSVRecord r : records) {
             String axis = r.get("axis_name");
-            double score = parseDoubleOrZero(r.get("score_value"));
+            String scoreStr = r.get("score_value");
+            String scoreText = r.get("score_text"); // Pegamos o texto para validar o "Sem progresso"
 
-            if (score <= 0) continue;
+            double score = 0.0;
 
+            // Lógica de extração segura da nota
+            if (scoreStr != null && !scoreStr.isBlank()) {
+                try {
+                    score = Double.parseDouble(scoreStr.trim());
+                } catch (NumberFormatException e) {
+                    continue; // Pula se houver lixo não numérico (ex: "N/A")
+                }
+            } else if ("Sem progresso".equalsIgnoreCase(scoreText)) {
+                // Se o valor está vazio, mas o texto diz "Sem progresso", a nota é zero garantida!
+                score = 0.0;
+            } else {
+                // Se está vazio e não tem o texto indicando falta de progresso, é falta de dado. Pula.
+                continue;
+            }
+
+            // Somatória e contagem (agora os zeros vão passar por aqui e aumentar o divisor!)
             if ("Financiamento".equalsIgnoreCase(axis)) {
                 sumFin += score; countFin++;
             } else if ("Governança".equalsIgnoreCase(axis)) {
@@ -139,11 +156,11 @@ public class CsvLoaderService {
             }
         }
 
-        double avgFin = countFin > 0 ? sumFin / countFin : 2.5;
-        double avgGov = countGov > 0 ? sumGov / countGov : 2.5;
-        double avgPol = countPol > 0 ? sumPol / countPol : 2.5;
+        // Calcula a média. Se não houver nenhum dado computado (count == 0), você pode decidir o default (ex: 0.0)
+        double avgFin = countFin > 0 ? sumFin / countFin : 0.0; 
+        double avgGov = countGov > 0 ? sumGov / countGov : 0.0;
+        double avgPol = countPol > 0 ? sumPol / countPol : 0.0;
 
-        // SE TODAS AS ENTIDADES FOREM CONVERTIDAS PARA 0-100 AQUI:
         double normFin = normalizarPara100(avgFin);
         double normGov = normalizarPara100(avgGov);
         double normPol = normalizarPara100(avgPol);
