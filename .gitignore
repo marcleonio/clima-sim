@@ -1,1 +1,29 @@
+# Build output
 target
+dist
+build
+.vite
+
+# Dependências
+node_modules
+
+# Variáveis de ambiente / segredos locais
+.env
+.env.local
+.env.*.local
+
+# IDE / editor
+.idea
+.vscode
+*.iml
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Documento de referência da metodologia (grande, não é código do projeto)
+doc.txt
+
+# Cache/saída da ferramenta graphify (JSONs gerados automaticamente, não é código do projeto)
+.graphify/
+.graphifyignore

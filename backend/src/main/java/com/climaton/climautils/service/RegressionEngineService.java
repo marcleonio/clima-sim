@@ -24,6 +24,7 @@ import com.climaton.climautils.dto.response.SeriesTemporaisResponse;
 import com.climaton.climautils.dto.response.SimulacaoResponse;
 import com.climaton.climautils.dto.response.TradeOffResponse;
 import com.climaton.climautils.model.EntityScores;
+import com.climaton.climautils.service.external.DadosPublicosService;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -35,14 +36,30 @@ import lombok.extern.slf4j.Slf4j;
 public class RegressionEngineService {
 
     private final CsvLoaderService csvLoaderService;
+    private final DadosPublicosService dadosPublicosService;
     private double[] betaCoefficientsPol; // Coeficientes da regressão
 
     @PostConstruct
     public void initDataAndTrainModel() {
         Map<String, EntityScores> data = csvLoaderService.loadAndAggregateCsv();
         if (!data.isEmpty()) {
-            trainModel(data.values());
+            trainModel(entidadesReaisParaTreino(data));
         }
+    }
+
+    /**
+     * Remove do treino as agregações que não são governos reais e independentes:
+     * "Estados consolidados"/"Municípios consolidados" (médias pré-calculadas da própria
+     * base) e "Brasil" (média que este serviço calcula a partir dos próprios estados).
+     * Incluí-las no OLS violaria a suposição de observações independentes e infla
+     * artificialmente o "n" declarado do modelo.
+     */
+    private Collection<EntityScores> entidadesReaisParaTreino(Map<String, EntityScores> data) {
+        return data.values().stream()
+                .filter(e -> e.getEntityName() != null)
+                .filter(e -> !e.getEntityName().toLowerCase().contains("consolidad"))
+                .filter(e -> !"brasil".equalsIgnoreCase(e.getEntityName()))
+                .toList();
     }
 
     private void trainModel(Collection<EntityScores> entities) {
@@ -73,8 +90,12 @@ public class RegressionEngineService {
         }
 
         Map<String, EntityScores> database = csvLoaderService.loadAndAggregateCsv();
-        String key = request.nomeEntidade() != null ? request.nomeEntidade().toLowerCase() : "acre";
-        EntityScores base = database.getOrDefault(key, database.values().iterator().next());
+        String nomeSolicitado = request.nomeEntidade() != null ? request.nomeEntidade() : "Acre";
+        String tipoSolicitado = request.tipoEntidade() != null ? request.tipoEntidade().name() : null;
+        EntityScores base = csvLoaderService.buscarEntidade(tipoSolicitado, nomeSolicitado);
+        if (base == null) {
+            base = database.values().iterator().next();
+        }
 
         // Capturar o tipo da entidade (seja do request ou da entidade carregada do banco)
         String tipoEntidadeStr = request.tipoEntidade() != null
@@ -118,12 +139,21 @@ public class RegressionEngineService {
         double arrastoFinanceiro = efeitoFin < 0 ? efeitoFin * 0.70 : 0.0; // Corte no dinheiro seca projetos
         double arrastoBurocratico = efeitoGov < 0 ? efeitoGov * 0.35 : 0.0; // Queda na governança vaza/desperdiça recursos
 
+        // Sinaliza quando a meta pedida pelo usuário para Políticas Públicas excede o que
+        // Financiamento + Governança sustentam de forma realista - respondendo diretamente
+        // "qual meta é incompatível com a capacidade atual?". Antes esse cálculo já existia
+        // (o teto operacional abaixo), mas só ia parar num log.info() que ninguém via.
+        boolean metaIncompativelComCapacidade = false;
+        double tetoSustentavelPol = 0.0;
+
         if (adjPolReq < 0) {
             // Corte direto em políticas somado ao estrangulamento orçamentário/institucional
             efeitoPol = (adjPolReq + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
         } else if (adjPolReq > suporteEstrutural + 15.0) {
             // Teto operacional dinâmico (rendimento decrescente por falta de suporte)
-            efeitoPol = (suporteEstrutural + 15.0 + ((adjPolReq - (suporteEstrutural + 15.0)) * 0.20) + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
+            tetoSustentavelPol = suporteEstrutural + 15.0;
+            metaIncompativelComCapacidade = true;
+            efeitoPol = (tetoSustentavelPol + ((adjPolReq - tetoSustentavelPol) * 0.20) + arrastoFinanceiro + arrastoBurocratico) * mod.inerciaPol();
             log.info("Ajuste de Políticas limitado para {}% por gargalo em Financiamento/Governança.", efeitoPol);
         } else {
             // Crescimento normal do usuário afetado por eventuais quedas em Financiamento/Governança
@@ -204,7 +234,30 @@ public class RegressionEngineService {
         ));
 
         // 6. LISTA DE TRADE-OFFS DINÂMICOS
-        List<TradeOffResponse> tradeOffs = calcularTradeOffs(request, efeitoFin, efeitoGov, efeitoPol,tipoEntidadeStr);
+        List<TradeOffResponse> tradeOffs = new ArrayList<>(calcularTradeOffs(request, efeitoFin, efeitoGov, efeitoPol, tipoEntidadeStr));
+
+        if (metaIncompativelComCapacidade) {
+            tradeOffs.add(0, new TradeOffResponse(
+                    TipoTradeOff.ALERTA,
+                    "Políticas Públicas",
+                    "Meta Incompatível com a Capacidade Atual",
+                    String.format(java.util.Locale.forLanguageTag("pt-BR"),
+                            "Você pediu %+.1f%% em Políticas Públicas, mas o suporte atual de Financiamento e Governança sustenta, de forma realista, até %+.1f%%. "
+                            + "Acima disso o retorno cai fortemente (rendimento decrescente): a meta anunciada não é alcançável sem reforçar Financiamento e/ou Governança antes.",
+                            adjPolReq, tetoSustentavelPol)
+            ));
+        }
+
+        // 7. CHECAGEM FACTUAL COM DADOS PÚBLICOS (SICONFI/IBGE) - aditivo e nunca bloqueante:
+        // se as APIs externas falharem ou o dado não existir para o ente, simplesmente não entra.
+        try {
+            TradeOffResponse checagemFactual = dadosPublicosService.gerarChecagemFactual(base.getEntityId(), base.getEntityType());
+            if (checagemFactual != null) {
+                tradeOffs.add(checagemFactual);
+            }
+        } catch (Exception e) {
+            log.warn("Checagem com dados públicos falhou de forma inesperada, seguindo sem esse item: {}", e.getMessage());
+        }
 
         MetadadosResponse metadados = new MetadadosResponse(base.getEntityName(), base.getEntityType(), "2026-08-04");
         return new SimulacaoResponse(metadados, resumo, kpis, seriesTemporais, tradeOffs);

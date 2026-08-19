@@ -4,6 +4,8 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
+  ChevronDown,
+  ChevronUp,
   FileDown,
   Landmark,
   Leaf,
@@ -31,14 +33,17 @@ import { TrendChart } from "@/components/clima/trend-chart";
 import { AxisBarChart, AxisRadarChart } from "@/components/clima/axis-charts";
 import { ScoreHeatmap } from "@/components/clima/state-heatmap";
 import { KpiStrip } from "@/components/clima/kpi-strip";
+import { EvidenciaPainel } from "@/components/clima/evidencia-painel";
 import { exportarRelatorioPdf } from "@/lib/clima-pdf";
 import {
   DEFAULT_BASE_URL,
   getApiBaseUrl,
   listarEntidades,
+  listarEvidencias,
   recalcular,
   setApiBaseUrl,
   type EntityScores,
+  type EvidenciaItem,
   type SimulacaoResponse,
   type Source,
   TIPOS_ENTIDADE,
@@ -103,6 +108,18 @@ function rotuloPilar(kpi: { chaveEixo: string; nomeExibicao: string }) {
   return kpi.nomeExibicao;
 }
 
+// O campo "eixo" que vem do CSV de evidências ("Financiamento", "Governança",
+// "Políticas públicas") não bate exatamente com o rótulo de exibição do KPI
+// (maiúsculas/acentuação) - compara pela mesma palavra-chave usada em rotuloPilar.
+function evidenciaPertenceAoKpi(eixoEvidencia: string, kpi: { chaveEixo: string; nomeExibicao: string }) {
+  const e = eixoEvidencia.toLowerCase();
+  const pilar = rotuloPilar(kpi);
+  if (pilar === "Governança") return e.includes("govern");
+  if (pilar === "Financiamento") return e.includes("financ");
+  if (pilar === "Políticas Públicas") return e.includes("polit") || e.includes("polít");
+  return false;
+}
+
 const EIXOS = [
   {
     key: "ajusteFinanciamento" as const,
@@ -137,6 +154,13 @@ function Simulador() {
   const [source, setSource] = useState<Source>("demo");
   const [loading, setLoading] = useState(false);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
+
+  // Evidências (comentários originais dos auditores) - carregadas sob demanda, uma vez
+  // por entidade, e reaproveitadas entre as 3 abas de eixo enquanto o usuário não trocar
+  // de estado/município.
+  const [evidenciasPorEntidade, setEvidenciasPorEntidade] = useState<Record<string, EvidenciaItem[]>>({});
+  const [eixosComEvidenciaAberta, setEixosComEvidenciaAberta] = useState<Set<string>>(new Set());
+  const [carregandoEvidencias, setCarregandoEvidencias] = useState(false);
 
   useEffect(() => {
     setBaseUrl(getApiBaseUrl());
@@ -187,6 +211,31 @@ function Simulador() {
     if (nome) void simular();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nome, esfera]);
+
+  const chaveEntidadeAtual = `${esfera}:${entidade?.entityName ?? nome}`;
+  const evidenciasAtuais = evidenciasPorEntidade[chaveEntidadeAtual] ?? [];
+
+  const alternarEvidencias = useCallback(
+    async (chaveEixo: string) => {
+      setEixosComEvidenciaAberta((prev) => {
+        const next = new Set(prev);
+        if (next.has(chaveEixo)) next.delete(chaveEixo);
+        else next.add(chaveEixo);
+        return next;
+      });
+
+      if (evidenciasPorEntidade[chaveEntidadeAtual]) return; // já em cache para esta entidade
+
+      setCarregandoEvidencias(true);
+      try {
+        const itens = await listarEvidencias(esfera, entidade?.entityName ?? nome);
+        setEvidenciasPorEntidade((prev) => ({ ...prev, [chaveEntidadeAtual]: itens }));
+      } finally {
+        setCarregandoEvidencias(false);
+      }
+    },
+    [chaveEntidadeAtual, entidade, esfera, nome, evidenciasPorEntidade],
+  );
 
   const variacao = sim?.resumo.variacaoPercentual ?? 0;
 
@@ -395,6 +444,8 @@ function Simulador() {
 
                 {sim.kpisEixos.map((kpi) => {
                   const delta = kpi.scoreProjetado - kpi.scoreAtual;
+                  const aberto = eixosComEvidenciaAberta.has(kpi.chaveEixo);
+                  const itensDoEixo = evidenciasAtuais.filter((ev) => evidenciaPertenceAoKpi(ev.eixo, kpi));
                   return (
                     <Card key={kpi.chaveEixo} className="card-soft border-border/70">
                       <CardContent className="space-y-4 pt-6">
@@ -430,6 +481,21 @@ function Simulador() {
                         <p className="text-xs uppercase tracking-wider text-muted-foreground">
                           Hoje {kpi.scoreAtual.toFixed(1)} · tendência {kpi.tendencia.toLowerCase()}
                         </p>
+
+                        <button
+                          type="button"
+                          onClick={() => void alternarEvidencias(kpi.chaveEixo)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                        >
+                          {aberto ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                          {aberto ? "Ocultar evidências" : "Ver evidências"}
+                        </button>
+
+                        {aberto && (
+                          <div className="border-t border-border/60 pt-3">
+                            <EvidenciaPainel itens={itensDoEixo} carregando={carregandoEvidencias} />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
