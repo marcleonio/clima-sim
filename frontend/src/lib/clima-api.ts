@@ -133,6 +133,17 @@ export type SimulacaoResponse = {
   listaTradeOffs: TradeOffResponse[];
 };
 
+// Comentário original do auditor por trás de um item avaliado (ex.: "F1.A") -
+// a evidência/documento que justifica a nota, hoje escondida no CSV bruto.
+export type EvidenciaItem = {
+  eixo: string;
+  componente: string;
+  item: string;
+  notaTexto: string;
+  dataAvaliacao: string | null;
+  comentario: string;
+};
+
 
 const BASE_KEY = "climabrasil:apiBaseUrl";
 export const DEFAULT_BASE_URL = "http://localhost:8080";
@@ -146,9 +157,9 @@ export function setApiBaseUrl(url: string) {
   if (typeof window !== "undefined") window.localStorage.setItem(BASE_KEY, url.replace(/\/$/, ""));
 }
 
-async function req<T>(path: string, init?: RequestInit): Promise<T> {
+async function req<T>(path: string, init?: RequestInit, timeoutMs = 4000): Promise<T> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 4000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(`${getApiBaseUrl()}${path}`, {
       ...init,
@@ -402,13 +413,29 @@ export async function recalcular(
   body: SimulacaoRequest,
 ): Promise<{ data: SimulacaoResponse; source: Source }> {
   try {
-    const data = await req<SimulacaoResponse>("/api/v1/simulacao/recalculate", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    // Timeout maior que o padrão: o backend cruza com SICONFI/IBGE ao vivo na primeira
+    // chamada por entidade (até ~10s frios); chamadas seguintes vêm do cache e são rápidas.
+    const data = await req<SimulacaoResponse>(
+      "/api/v1/simulacao/recalculate",
+      { method: "POST", body: JSON.stringify(body) },
+      12000,
+    );
     if (!data?.resumo) throw new Error("resposta inválida");
     return { data, source: "api" };
   } catch {
     return { data: demoSimular(body), source: "demo" };
+  }
+}
+
+export async function listarEvidencias(
+  tipoEntidade: string | undefined,
+  nomeEntidade: string,
+): Promise<EvidenciaItem[]> {
+  try {
+    const params = new URLSearchParams({ nomeEntidade });
+    if (tipoEntidade) params.set("tipoEntidade", tipoEntidade);
+    return await req<EvidenciaItem[]>(`/api/v1/simulacao/evidencias?${params.toString()}`);
+  } catch {
+    return [];
   }
 }

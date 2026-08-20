@@ -1,16 +1,19 @@
 package com.climaton.climautils.controller;
 
 import com.climaton.climautils.dto.request.SimulacaoRequest;
+import com.climaton.climautils.dto.response.EvidenciaItemResponse;
 import com.climaton.climautils.dto.response.SimulacaoResponse;
 import com.climaton.climautils.model.EntityScores;
 import com.climaton.climautils.service.CsvLoaderService;
 import com.climaton.climautils.service.RegressionEngineService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -30,6 +33,17 @@ public class SimulacaoController {
     @Operation(summary = "Listar Entidades e Scores Base", description = "Retorna todos os estados e municípios com as notas atuais do CSV.")
     public ResponseEntity<Map<String, EntityScores>> listarEntidades() {
         return ResponseEntity.ok(csvLoaderService.loadAndAggregateCsv());
+    }
+
+    @GetMapping("/evidencias")
+    @Operation(
+        summary = "Listar Evidências de uma Entidade",
+        description = "Retorna os comentários originais dos auditores por trás de cada item avaliado (a evidência/documento que justifica a nota), para consulta e auditoria."
+    )
+    public ResponseEntity<List<EvidenciaItemResponse>> listarEvidencias(
+            @Parameter(description = "Esfera da entidade (Federal, Estadual ou Municipal)") @RequestParam(required = false) String tipoEntidade,
+            @Parameter(description = "Nome do Estado, Município ou 'Brasil'") @RequestParam String nomeEntidade) {
+        return ResponseEntity.ok(csvLoaderService.buscarEvidencias(tipoEntidade, nomeEntidade));
     }
 
     @PostMapping("/recalculate")
