@@ -48,6 +48,17 @@ public class RegressionEngineService {
     }
 
     /**
+     * Retreina o modelo OLS com o estado atual da base (chamado após o upload de um novo CSV,
+     * já que este substitui os scores em memória usados como amostra de treino).
+     */
+    public void retrain() {
+        Map<String, EntityScores> data = csvLoaderService.loadAndAggregateCsv();
+        if (!data.isEmpty()) {
+            trainModel(entidadesReaisParaTreino(data));
+        }
+    }
+
+    /**
      * Remove do treino as agregações que não são governos reais e independentes:
      * "Estados consolidados"/"Municípios consolidados" (médias pré-calculadas da própria
      * base) e "Brasil" (média que este serviço calcula a partir dos próprios estados).

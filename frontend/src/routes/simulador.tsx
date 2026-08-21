@@ -34,16 +34,20 @@ import { AxisBarChart, AxisRadarChart } from "@/components/clima/axis-charts";
 import { ScoreHeatmap } from "@/components/clima/state-heatmap";
 import { KpiStrip } from "@/components/clima/kpi-strip";
 import { EvidenciaPainel } from "@/components/clima/evidencia-painel";
+import { EvolutionChart } from "@/components/clima/evolution-chart";
+import { CsvUploadCard } from "@/components/clima/csv-upload-card";
 import { exportarRelatorioPdf } from "@/lib/clima-pdf";
 import {
   DEFAULT_BASE_URL,
   getApiBaseUrl,
   listarEntidades,
   listarEvidencias,
+  buscarEvolucao,
   recalcular,
   setApiBaseUrl,
   type EntityScores,
   type EvidenciaItem,
+  type EvolutionChartData,
   type SimulacaoResponse,
   type Source,
   TIPOS_ENTIDADE,
@@ -75,7 +79,17 @@ const TRADEOFF_ESTILO: Record<
   },
 };
 
+// Abas válidas da página - usadas para deep-linking a partir do menu (ex.: /simulador?tab=evolucao).
+const ABAS = ["cenario", "indicadores", "projecoes", "tradeoffs", "evolucao", "conexao"] as const;
+type Aba = (typeof ABAS)[number];
+
 export const Route = createFileRoute("/simulador")({
+  validateSearch: (search: Record<string, unknown>): { tab?: Aba } => {
+    const tab = search["tab"];
+    return typeof tab === "string" && (ABAS as readonly string[]).includes(tab)
+      ? { tab: tab as Aba }
+      : {};
+  },
   head: () => ({
     meta: [
       { title: "Simulador de cenários — ClimaSim" },
@@ -111,7 +125,10 @@ function rotuloPilar(kpi: { chaveEixo: string; nomeExibicao: string }) {
 // O campo "eixo" que vem do CSV de evidências ("Financiamento", "Governança",
 // "Políticas públicas") não bate exatamente com o rótulo de exibição do KPI
 // (maiúsculas/acentuação) - compara pela mesma palavra-chave usada em rotuloPilar.
-function evidenciaPertenceAoKpi(eixoEvidencia: string, kpi: { chaveEixo: string; nomeExibicao: string }) {
+function evidenciaPertenceAoKpi(
+  eixoEvidencia: string,
+  kpi: { chaveEixo: string; nomeExibicao: string },
+) {
   const e = eixoEvidencia.toLowerCase();
   const pilar = rotuloPilar(kpi);
   if (pilar === "Governança") return e.includes("govern");
@@ -142,6 +159,16 @@ const EIXOS = [
 ];
 
 function Simulador() {
+  const { tab } = Route.useSearch();
+  const [aba, setAba] = useState<Aba>(tab ?? "cenario");
+
+  // Permite entrar direto numa aba a partir de um link externo (ex.: item de menu para
+  // /simulador?tab=evolucao) - mesmo quando o usuário já está nesta página e o componente
+  // não remonta.
+  useEffect(() => {
+    if (tab) setAba(tab);
+  }, [tab]);
+
   const [entidades, setEntidades] = useState<EntityScores[]>([]);
   const [esfera, setEsfera] = useState<TipoEntidade>("Estadual");
   const [nome, setNome] = useState<string>("");
@@ -154,11 +181,14 @@ function Simulador() {
   const [source, setSource] = useState<Source>("demo");
   const [loading, setLoading] = useState(false);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
+  const [evolucao, setEvolucao] = useState<EvolutionChartData | null>(null);
 
   // Evidências (comentários originais dos auditores) - carregadas sob demanda, uma vez
   // por entidade, e reaproveitadas entre as 3 abas de eixo enquanto o usuário não trocar
   // de estado/município.
-  const [evidenciasPorEntidade, setEvidenciasPorEntidade] = useState<Record<string, EvidenciaItem[]>>({});
+  const [evidenciasPorEntidade, setEvidenciasPorEntidade] = useState<
+    Record<string, EvidenciaItem[]>
+  >({});
   const [eixosComEvidenciaAberta, setEixosComEvidenciaAberta] = useState<Set<string>>(new Set());
   const [carregandoEvidencias, setCarregandoEvidencias] = useState(false);
 
@@ -194,6 +224,18 @@ function Simulador() {
     [entidadesDaEsfera, nome],
   );
 
+  const carregarEvolucao = useCallback(async () => {
+    if (entidade?.entityId === undefined) {
+      setEvolucao(null);
+      return;
+    }
+    setEvolucao(await buscarEvolucao(entidade.entityId));
+  }, [entidade]);
+
+  useEffect(() => {
+    void carregarEvolucao();
+  }, [carregarEvolucao]);
+
   const simular = useCallback(async () => {
     if (!entidade && !(esfera === "Federal" && nome)) return;
     setLoading(true);
@@ -211,6 +253,15 @@ function Simulador() {
     if (nome) void simular();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nome, esfera]);
+
+  // Após importar um novo CSV: recarrega a lista de entidades (scores podem ter mudado), o
+  // histórico de evolução da entidade selecionada e roda a simulação de novo (o modelo de
+  // regressão foi retreinado no backend com os dados recém-importados).
+  const aoImportarCsv = useCallback(async () => {
+    await carregar();
+    await carregarEvolucao();
+    await simular();
+  }, [carregar, carregarEvolucao, simular]);
 
   const chaveEntidadeAtual = `${esfera}:${entidade?.entityName ?? nome}`;
   const evidenciasAtuais = evidenciasPorEntidade[chaveEntidadeAtual] ?? [];
@@ -269,12 +320,13 @@ function Simulador() {
         </div>
       </div>
 
-      <Tabs defaultValue="cenario" className="mt-8">
+      <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)} className="mt-8">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="cenario">Cenário</TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
           <TabsTrigger value="projecoes">Projeções</TabsTrigger>
           <TabsTrigger value="tradeoffs">Trade-offs</TabsTrigger>
+          <TabsTrigger value="evolucao">Evolução</TabsTrigger>
           <TabsTrigger value="conexao">Conexão</TabsTrigger>
         </TabsList>
 
@@ -373,7 +425,11 @@ function Simulador() {
                   <Button
                     variant="ghost"
                     onClick={() =>
-                      setAjustes({ ajusteFinanciamento: 0, ajusteGovernanca: 0, ajustePoliticas: 0 })
+                      setAjustes({
+                        ajusteFinanciamento: 0,
+                        ajusteGovernanca: 0,
+                        ajustePoliticas: 0,
+                      })
                     }
                   >
                     Zerar ajustes
@@ -441,11 +497,12 @@ function Simulador() {
           {sim ? (
             <>
               <section className="grid gap-6 md:grid-cols-3">
-
                 {sim.kpisEixos.map((kpi) => {
                   const delta = kpi.scoreProjetado - kpi.scoreAtual;
                   const aberto = eixosComEvidenciaAberta.has(kpi.chaveEixo);
-                  const itensDoEixo = evidenciasAtuais.filter((ev) => evidenciaPertenceAoKpi(ev.eixo, kpi));
+                  const itensDoEixo = evidenciasAtuais.filter((ev) =>
+                    evidenciaPertenceAoKpi(ev.eixo, kpi),
+                  );
                   return (
                     <Card key={kpi.chaveEixo} className="card-soft border-border/70">
                       <CardContent className="space-y-4 pt-6">
@@ -487,13 +544,20 @@ function Simulador() {
                           onClick={() => void alternarEvidencias(kpi.chaveEixo)}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
                         >
-                          {aberto ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                          {aberto ? (
+                            <ChevronUp className="size-3.5" />
+                          ) : (
+                            <ChevronDown className="size-3.5" />
+                          )}
                           {aberto ? "Ocultar evidências" : "Ver evidências"}
                         </button>
 
                         {aberto && (
                           <div className="border-t border-border/60 pt-3">
-                            <EvidenciaPainel itens={itensDoEixo} carregando={carregandoEvidencias} />
+                            <EvidenciaPainel
+                              itens={itensDoEixo}
+                              carregando={carregandoEvidencias}
+                            />
                           </div>
                         )}
                       </CardContent>
@@ -570,7 +634,6 @@ function Simulador() {
           )}
         </TabsContent>
 
-
         {/* Trade-offs */}
         <TabsContent value="tradeoffs" className="mt-6">
           <h2 className="text-2xl">Trade-offs identificados</h2>
@@ -604,6 +667,33 @@ function Simulador() {
               );
             })}
           </div>
+        </TabsContent>
+
+        {/* Evolução */}
+        <TabsContent value="evolucao" className="mt-6 space-y-6">
+          <CsvUploadCard onImportado={() => void aoImportarCsv()} />
+
+          <Card className="card-soft border-border/70">
+            <CardHeader>
+              <CardTitle className="text-xl">Evolução histórica</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {entidade
+                  ? `Score de ${entidade.entityName} em cada avaliação já importada.`
+                  : "Selecione uma entidade na aba Cenário para ver o histórico."}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {evolucao && evolucao.labels.length > 0 ? (
+                <EvolutionChart chart={evolucao} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {entidade
+                    ? "Nenhum histórico encontrado para esta entidade ainda."
+                    : "Nenhuma entidade selecionada."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Conexão */}

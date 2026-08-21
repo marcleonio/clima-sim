@@ -144,6 +144,32 @@ export type EvidenciaItem = {
   comentario: string;
 };
 
+// Histórico de scores por eixo ao longo dos snapshots já importados (base inicial + uploads).
+export type EvolutionChartData = {
+  labels: string[];
+  datasets: { label: string; data: number[] }[];
+};
+
+// Comparação, entidade a entidade, entre o estado anterior e o CSV recém-importado.
+export type CsvUploadComparacao = {
+  entityType: string;
+  entityName: string;
+  scoreAnteriorGeral: number;
+  scoreNovoGeral: number;
+  variacao: number;
+};
+
+export type CsvUploadResult = {
+  dataAvaliacao: string;
+  versao: string;
+  totalEntidadesProcessadas: number;
+  entidadesNovas: number;
+  entidadesComparadas: number;
+  variacaoMediaFinanciamento: number;
+  variacaoMediaGovernanca: number;
+  variacaoMediaPoliticas: number;
+  maioresVariacoes: CsvUploadComparacao[];
+};
 
 const BASE_KEY = "climabrasil:apiBaseUrl";
 export const DEFAULT_BASE_URL = "http://localhost:8080";
@@ -424,6 +450,44 @@ export async function recalcular(
     return { data, source: "api" };
   } catch {
     return { data: demoSimular(body), source: "demo" };
+  }
+}
+
+export async function buscarEvolucao(entityId: number): Promise<EvolutionChartData | null> {
+  try {
+    return await req<EvolutionChartData>(`/api/reports/evolution?entityId=${entityId}`);
+  } catch {
+    return null;
+  }
+}
+
+// Envia um novo CSV de avaliação (ex.: um novo ano) para o backend processar, comparar com o
+// estado atual e gravar como um novo snapshot no histórico. Usa fetch direto (fora do helper
+// `req`) porque o corpo é multipart/form-data - definir Content-Type manualmente quebraria o
+// boundary que o próprio navegador gera para o FormData.
+export async function importarCsv(file: File): Promise<CsvUploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/reports/upload`, {
+      method: "POST",
+      body: form,
+      signal: ctrl.signal,
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok) {
+      const mensagem =
+        payload && typeof payload === "object" && "message" in payload
+          ? String((payload as { message: unknown }).message)
+          : `Falha ao importar o CSV (HTTP ${res.status}).`;
+      throw new Error(mensagem);
+    }
+    return payload as CsvUploadResult;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

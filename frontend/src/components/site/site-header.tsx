@@ -5,6 +5,7 @@ import { useState } from "react";
 const NAV = [
   { to: "/", label: "Início" },
   { to: "/simulador", label: "Simulador" },
+  { to: "/simulador", label: "Importar dados", search: { tab: "evolucao" } },
   { to: "/metodologia", label: "Metodologia" },
   { to: "/impacto", label: "Impacto" },
 ] as const;
@@ -30,8 +31,9 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 md:flex">
           {NAV.map((item) => (
             <Link
-              key={item.to}
+              key={item.label}
               to={item.to}
+              {...("search" in item ? { search: item.search } : {})}
               activeOptions={{ exact: item.to === "/" }}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}
               inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
@@ -57,8 +59,9 @@ export function SiteHeader() {
         <nav className="grid gap-1 border-t border-border/60 px-6 py-3 md:hidden">
           {NAV.map((item) => (
             <Link
-              key={item.to}
+              key={item.label}
               to={item.to}
+              {...("search" in item ? { search: item.search } : {})}
               activeOptions={{ exact: item.to === "/" }}
               onClick={() => setAberto(false)}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}

@@ -1,7 +1,11 @@
 package com.climaton.climautils.service;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,27 +17,38 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.climaton.climautils.dto.response.CsvUploadResultDTO;
 import com.climaton.climautils.dto.response.EvidenciaItemResponse;
 import com.climaton.climautils.model.EntityScores;
+import com.climaton.climautils.model.EvaluationSnapshot;
+import com.climaton.climautils.repository.EvaluationSnapshotRepository;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CsvLoaderService {
 
     private final Map<String, EntityScores> databaseEmMemoria = new HashMap<>();
     private final Map<String, List<EvidenciaItemResponse>> evidenciasEmMemoria = new HashMap<>();
+    private final EvaluationSnapshotRepository evaluationSnapshotRepository;
 
+    @Transactional
     public Map<String, EntityScores> loadAndAggregateCsv() {
         if (!databaseEmMemoria.isEmpty()) {
             return databaseEmMemoria;
         }
 
         try {
-            Map<String, List<CSVRecord>> agrupado = lerEAgruparRecords();
+            CsvProcessingData csvData = lerEAgruparRecords();
+            Map<String, List<CSVRecord>> agrupado = csvData.agrupado();
             processarGrupos(agrupado);
+            persistirSnapshot(csvData.dataAvaliacao(), csvData.versao(), new ArrayList<>(databaseEmMemoria.values()));
             log.info(">>> CSV do Painel ClimaBrasil carregado com sucesso! Total de entidades: " + databaseEmMemoria.size());
         } catch (Exception e) {
             log.error("Erro ao carregar o CSV: " + e.getMessage());
@@ -42,10 +57,106 @@ public class CsvLoaderService {
         return databaseEmMemoria;
     }
 
-    private Map<String, List<CSVRecord>> lerEAgruparRecords() throws Exception {
-        ClassPathResource resource = new ClassPathResource("pcb-raw-data.csv");
-        Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+    /**
+     * Processa um CSV enviado pelo usuário (ex.: avaliação de um novo ano) no mesmo formato
+     * do Painel ClimaBrasil. Garante que a base inicial já esteja carregada, calcula os scores
+     * agregados do arquivo enviado, compara entidade a entidade com o estado atual (antes do
+     * upload) e persiste tudo como um novo snapshot no histórico - o que já alimenta o gráfico
+     * de evolução em {@link com.climaton.climautils.service.EvolutionReportService}. O estado em
+     * memória (usado por /entidades, /evidencias e pela simulação) passa a refletir os dados
+     * recém-importados.
+     */
+    @Transactional
+    public CsvUploadResultDTO processarUpload(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Nenhum arquivo enviado.");
+        }
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
+            throw new IllegalArgumentException("Apenas arquivos .csv são aceitos.");
+        }
 
+        loadAndAggregateCsv();
+        Map<String, EntityScores> scoresAnteriores = new HashMap<>(databaseEmMemoria);
+
+        CsvProcessingData csvData;
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
+            csvData = lerEAgruparRecords(reader);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Não foi possível ler o arquivo CSV enviado: " + e.getMessage(), e);
+        }
+
+        if (csvData.agrupado().isEmpty()) {
+            throw new IllegalArgumentException("O CSV enviado não contém registros válidos.");
+        }
+        if (evaluationSnapshotRepository.existsByDataAvaliacaoAndVersao(csvData.dataAvaliacao(), csvData.versao())) {
+            throw new IllegalStateException(
+                    "Já existe uma avaliação importada com esta data/versão (%s).".formatted(csvData.versao()));
+        }
+
+        processarGrupos(csvData.agrupado());
+        persistirSnapshot(csvData.dataAvaliacao(), csvData.versao(), new ArrayList<>(databaseEmMemoria.values()));
+
+        log.info(">>> Upload de CSV processado com sucesso! Versão: {}, Entidades: {}",
+                csvData.versao(), databaseEmMemoria.size());
+
+        return montarResultadoComparacao(csvData.dataAvaliacao(), csvData.versao(), scoresAnteriores, databaseEmMemoria);
+    }
+
+    private CsvUploadResultDTO montarResultadoComparacao(LocalDateTime dataAvaliacao, String versao,
+            Map<String, EntityScores> anteriores, Map<String, EntityScores> atuais) {
+
+        List<CsvUploadResultDTO.ComparacaoEntidadeDTO> comparacoes = new ArrayList<>();
+        double somaVarFin = 0, somaVarGov = 0, somaVarPol = 0;
+        int comparadas = 0;
+        int novas = 0;
+
+        for (Map.Entry<String, EntityScores> entry : atuais.entrySet()) {
+            EntityScores nova = entry.getValue();
+            EntityScores anterior = anteriores.get(entry.getKey());
+
+            if (anterior == null) {
+                novas++;
+                continue;
+            }
+
+            comparadas++;
+            somaVarFin += nova.getScoreFinanciamento() - anterior.getScoreFinanciamento();
+            somaVarGov += nova.getScoreGovernanca() - anterior.getScoreGovernanca();
+            somaVarPol += nova.getScorePoliticasPublicas() - anterior.getScorePoliticasPublicas();
+
+            double geralAnterior = anterior.getScoreGeralMedia();
+            double geralNovo = nova.getScoreGeralMedia();
+
+            comparacoes.add(new CsvUploadResultDTO.ComparacaoEntidadeDTO(
+                    nova.getEntityType(), nova.getEntityName(),
+                    round(geralAnterior), round(geralNovo), round(geralNovo - geralAnterior)));
+        }
+
+        comparacoes.sort((a, b) -> Double.compare(Math.abs(b.getVariacao()), Math.abs(a.getVariacao())));
+        List<CsvUploadResultDTO.ComparacaoEntidadeDTO> maioresVariacoes = comparacoes.stream().limit(10).toList();
+
+        return new CsvUploadResultDTO(
+                dataAvaliacao,
+                versao,
+                atuais.size(),
+                novas,
+                comparadas,
+                comparadas > 0 ? round(somaVarFin / comparadas) : 0.0,
+                comparadas > 0 ? round(somaVarGov / comparadas) : 0.0,
+                comparadas > 0 ? round(somaVarPol / comparadas) : 0.0,
+                maioresVariacoes
+        );
+    }
+
+    private CsvProcessingData lerEAgruparRecords() throws Exception {
+        ClassPathResource resource = new ClassPathResource("pcb-raw-data.csv");
+        try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+            return lerEAgruparRecords(reader);
+        }
+    }
+
+    private CsvProcessingData lerEAgruparRecords(Reader reader) throws IOException {
         CSVParser csvParser = CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
@@ -53,11 +164,26 @@ public class CsvLoaderService {
                 .parse(reader);
 
         Map<String, List<CSVRecord>> agrupado = new HashMap<>();
+        LocalDateTime dataAvaliacao = null;
+        String versao = null;
+
         for (CSVRecord csvRecord : csvParser) {
+            if (dataAvaliacao == null) {
+                dataAvaliacao = parseDataAvaliacao(csvRecord.get("assessment_completion_dt"));
+            }
+            if (versao == null || versao.isBlank()) {
+                versao = csvRecord.get("assessment_version");
+            }
+
             String key = csvRecord.get("entity_type") + ":" + csvRecord.get("entity_name");
             agrupado.computeIfAbsent(key, k -> new ArrayList<>()).add(csvRecord);
         }
-        return agrupado;
+
+        if (dataAvaliacao == null) {
+            dataAvaliacao = LocalDateTime.now(ZoneOffset.UTC);
+        }
+
+        return new CsvProcessingData(agrupado, dataAvaliacao, versao == null ? "" : versao.trim());
     }
 
     private void processarGrupos(Map<String, List<CSVRecord>> agrupado) {
@@ -240,7 +366,7 @@ public class CsvLoaderService {
                 } catch (NumberFormatException e) {
                     continue; // Pula se houver lixo não numérico (ex: "N/A")
                 }
-            } else if ("Sem progresso".equalsIgnoreCase(scoreText)) {
+            } else if (scoreText != null && "Sem progresso".equalsIgnoreCase(scoreText.trim())) {
                 // Se o valor está vazio, mas o texto diz "Sem progresso", a nota é zero garantida!
                 score = 0.0;
             } else {
@@ -271,13 +397,12 @@ public class CsvLoaderService {
     }
 
     /**
-     * Converte qualquer escala de nota vinda do CSV (0-1, 0-5 ou 0-100) para a régua unificada 0-100.
+     * Converte a média da escala 0-1 para 0-100 quando necessário.
      */
     private double normalizarPara100(double valor) {
         if (valor <= 0) return 0.0;
-        if (valor <= 1.0) return round(valor * 100.0); // ex: 0.7448 -> 74.48
-        if (valor <= 5.0) return round((valor / 5.0) * 100.0); // ex: 2.5 -> 50.0
-        return round(valor); // Já está em 0-100
+        if (valor <= 1.0) return round(valor * 100.0);
+        return round(valor);
     }
 
     private double round(double val) {
@@ -291,5 +416,38 @@ public class CsvLoaderService {
         } catch (Exception e) {
             return 0.0;
         }
+    }
+
+    private LocalDateTime parseDataAvaliacao(String rawDate) {
+        if (rawDate == null || rawDate.isBlank()) {
+            return LocalDateTime.now(ZoneOffset.UTC);
+        }
+
+        try {
+            return LocalDateTime.ofInstant(Instant.parse(rawDate.trim()), ZoneOffset.UTC);
+        } catch (Exception e) {
+            return LocalDateTime.now(ZoneOffset.UTC);
+        }
+    }
+
+    private void persistirSnapshot(LocalDateTime dataAvaliacao, String versao, List<EntityScores> scores) {
+        if (evaluationSnapshotRepository.existsByDataAvaliacaoAndVersao(dataAvaliacao, versao)) {
+            return;
+        }
+
+        EvaluationSnapshot snapshot = new EvaluationSnapshot();
+        snapshot.setDataAvaliacao(dataAvaliacao);
+        snapshot.setVersao(versao);
+
+        for (EntityScores score : scores) {
+            snapshot.addScore(score);
+        }
+
+        evaluationSnapshotRepository.save(snapshot);
+    }
+
+    private record CsvProcessingData(Map<String, List<CSVRecord>> agrupado,
+                                     LocalDateTime dataAvaliacao,
+                                     String versao) {
     }
 }
