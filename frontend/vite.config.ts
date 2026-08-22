@@ -12,4 +12,18 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          // Evita que o rollup fragmente e crie dependências circulares nos chunks do SSR
+          manualChunks: undefined,
+        },
+      },
+    },
+    ssr: {
+      // Garante que dependências CommonJS problemáticas sejam transpiladas corretamente juntas no SSR
+      noExternal: true,
+    },
+  },
 });
