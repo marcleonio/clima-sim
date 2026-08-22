@@ -5,6 +5,7 @@ import { ArrowRight, FileText, Search, SearchX, ShieldAlert, Undo2, X } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BalaoAgente } from "@/components/agente/balao";
+import { PrecedentesDoEnte } from "@/components/painel/grafo-semelhanca";
 import { AchadoList } from "@/components/achado/achado-list";
 import { ComponenteHeatmap } from "@/components/achado/componente-heatmap";
 import { DocumentoDialog } from "@/components/achado/documento-dialog";
@@ -34,6 +35,7 @@ import {
   type TipoDocumento,
 } from "@/lib/documentos";
 import { insightsDoEnte } from "@/lib/agente/insights";
+import { pontesPara } from "@/lib/grafo";
 import { carregarDossie, ENTES, META, NOMES_ENTES, taxasDosOutros } from "@/lib/dados";
 import referenciasBrutas from "@/data/referencias.json";
 
@@ -134,6 +136,16 @@ function AchadosPage() {
   );
 
   const outrasTaxas = useMemo(() => (enteAtivo ? taxasDosOutros(enteAtivo) : []), [enteAtivo]);
+
+  /**
+    * Componentes que este ente falha e alguém do mesmo grupo de semelhança já
+    * resolveu. É a resposta para "e agora, como resolvo?" — e ela não é
+    * gerada: é o parecer que o auditor escreveu sobre quem resolveu.
+    */
+  const precedentes = useMemo(() => {
+    if (!enteAtivo || !ente) return [];
+    return pontesPara(enteAtivo, (c) => (ente.comps[c]?.l ?? 0) > 0);
+  }, [enteAtivo, ente]);
 
   const insights = useMemo(() => {
     const resumo = enteAtivo ? ENTES[enteAtivo] : undefined;
@@ -362,6 +374,10 @@ function AchadosPage() {
             />
 
             <Veredito veredito={veredito} financas={ENTES[enteAtivo]?.fin} />
+
+            {enteAtivo && precedentes.length > 0 && (
+              <PrecedentesDoEnte nome={enteAtivo} pontes={precedentes} />
+            )}
 
             <TrajetoriaPainel
               nomeEnte={enteAtivo}

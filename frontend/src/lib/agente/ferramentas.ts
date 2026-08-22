@@ -41,6 +41,7 @@ import {
   type Regiao,
   type TipoEnte,
 } from "@/lib/territorio";
+import { comunidadeDe, listar, pontesPara, vizinhosDe } from "@/lib/grafo";
 import { descreverTrajetoria, posicaoProjetada, projetar } from "@/lib/trajetoria";
 import referenciasBrutas from "@/data/referencias.json";
 
@@ -179,6 +180,13 @@ export const esquemas = {
     required: ["ente"],
     additionalProperties: false,
   },
+
+  vizinhos_semelhantes: {
+    type: "object",
+    properties: { ente: ENTE },
+    required: ["ente"],
+    additionalProperties: false,
+  },
 } as const;
 
 // Entradas de cada ferramenta, escritas à mão para não depender do Zod.
@@ -192,6 +200,7 @@ interface EntradaRanquear {
 interface EntradaPrecedente { componente: string; item?: string }
 interface EntradaProjecao { ente: string; requisitos: number }
 interface EntradaQuaseLa { ente: string; limite?: number }
+interface EntradaVizinhos { ente: string }
 
 // ------------------------------------------------------------------ execução
 
@@ -454,6 +463,53 @@ export const ferramentas = {
       "requisitos com ação parcial documentada — já saíram do zero",
     );
   },
+
+  /**
+   * Quem tem o mesmo formato de fragilidade — e quem já resolveu.
+   *
+   * O agrupamento é CALCULADO em etapa de build, como todo o resto. O modelo
+   * lê o resultado e redige a explicação; ele não descobre a semelhança.
+   */
+  async vizinhos_semelhantes({ ente }: EntradaVizinhos) {
+    const alvo = ENTES[ente];
+    if (!alvo) return naoEncontrado(ente);
+
+    const grupo = comunidadeDe(ente);
+    if (!grupo) {
+      return responder({
+        ente,
+        erro: "sem_grupo" as const,
+        explicacao: "Este ente não ficou em nenhum grupo de semelhança.",
+      });
+    }
+
+    const pontes = pontesPara(ente, (c) => (alvo.comps[c]?.l ?? 0) > 0);
+
+    return responder(
+      {
+        ente,
+        grupo: {
+          id: `G${grupo.id + 1}`,
+          tamanho: grupo.tamanho,
+          outrosEntes: grupo.entes.filter((n) => n !== ente),
+          pontuacaoMediaDoGrupo: grupo.pontuacaoMedia,
+          falhamMaisEm: grupo.perfil,
+          // Um grupo de dois entes não sustenta generalização, e a resposta
+          // precisa dizer isso em vez de apresentá-lo como padrão.
+          sustentaGeneralizacao: grupo.generalizavel,
+        },
+        vizinhosMaisParecidos: vizinhosDe(ente).slice(0, 3),
+        precedentes: pontes.map((p) => ({
+          componente: p.componente,
+          nomeComponente: p.nome,
+          quantosDoGrupoFalham: p.falham,
+          jaResolveram: p.resolveram,
+          comoResponder: `Use buscar_precedente ou listar_achados em ${listar(p.resolveram)} para ler o parecer que descreve o que foi feito.`,
+        })),
+      },
+      "semelhança de padrão de falha por cosseno sobre o vetor de déficit — não é causa comum, contágio nem característica regional",
+    );
+  },
 };
 
 export type NomeFerramenta = keyof typeof ferramentas;
@@ -476,6 +532,8 @@ export const DESCRICOES: Record<NomeFerramenta, string> = {
     "Efeito no índice se N requisitos saírem de 'Sem progresso' para o degrau seguinte. Aritmética da escala oficial, sem modelo estatístico e sem custo.",
   listar_quase_la:
     "Requisitos do ente que já saíram do zero e estão a um degrau de avançar, com o parecer. Use para perguntas sobre onde é mais fácil avançar.",
+  vizinhos_semelhantes:
+    "Entes com o mesmo formato de fragilidade que este, e quais deles já resolveram algo que ele ainda não. Use para responder 'quem tem o meu problema e já resolveu' e para sugerir a quem perguntar.",
 };
 
 /** Quantas ferramentas o agente tem. Usado no teste que trava a lista. */
