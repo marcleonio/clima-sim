@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { DocumentoDialog } from "@/components/achado/documento-dialog";
@@ -41,7 +42,7 @@ function documento(tipo: Parameters<typeof gerarDocumento>[0] = "oficio") {
 describe("DocumentoDialog", () => {
   it("não renderiza nada sem documento", () => {
     const { container } = render(
-      <DocumentoDialog documento={null} aberto={false} onFechar={vi.fn()} />,
+      <DocumentoDialog documento={null} nomeEnte="Boa Vista" aberto={false} onFechar={vi.fn()} />,
     );
 
     expect(container).toBeEmptyDOMElement();
@@ -49,7 +50,7 @@ describe("DocumentoDialog", () => {
 
   it("mostra título, protocolo e hash de conferência", () => {
     const doc = documento();
-    render(<DocumentoDialog documento={doc} aberto onFechar={vi.fn()} />);
+    render(<DocumentoDialog documento={doc} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
 
     // O DialogTitle acessível repete o título visível de propósito; basta existir.
     expect(screen.getAllByRole("heading", { name: /ofício de requisição/i }).length).toBeGreaterThan(0);
@@ -57,7 +58,7 @@ describe("DocumentoDialog", () => {
   });
 
   it("mostra o achado com a base normativa e o parecer da auditoria", () => {
-    render(<DocumentoDialog documento={documento()} aberto onFechar={vi.fn()} />);
+    render(<DocumentoDialog documento={documento()} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
 
     expect(screen.getByText(/P5A — Defesa civil/)).toBeInTheDocument();
     expect(screen.getByText(/Lei 12\.608\/2012/)).toBeInTheDocument();
@@ -65,21 +66,60 @@ describe("DocumentoDialog", () => {
   });
 
   it("cita a fonte oficial dos dados no rodapé", () => {
-    render(<DocumentoDialog documento={documento()} aberto onFechar={vi.fn()} />);
+    render(<DocumentoDialog documento={documento()} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
 
     expect(screen.getAllByText(/Painel ClimaBrasil/).length).toBeGreaterThan(0);
   });
 
   it("oferece imprimir e baixar em PDF", () => {
-    render(<DocumentoDialog documento={documento()} aberto onFechar={vi.fn()} />);
+    render(<DocumentoDialog documento={documento()} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: /imprimir/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /baixar pdf/i })).toBeInTheDocument();
   });
 
   it("no plano de providências, abre campos em branco para o gestor preencher", () => {
-    render(<DocumentoDialog documento={documento("plano")} aberto onFechar={vi.fn()} />);
+    render(<DocumentoDialog documento={documento("plano")} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
 
     expect(screen.getByText(/Causa identificada/i)).toBeInTheDocument();
+  });
+});
+
+describe("encaminhamento", () => {
+  it("oferece encaminhar, mas o disparo não é do sistema", async () => {
+    const usuario = userEvent.setup();
+    render(<DocumentoDialog documento={documento()} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
+
+    await usuario.click(screen.getByRole("button", { name: /encaminhar/i }));
+
+    // o link abre o cliente do próprio usuário, sem destinatário preenchido
+    const link = screen.getByRole("link", { name: /abrir no meu e-mail/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(href.startsWith("mailto:?")).toBe(true);
+    expect(href).toContain("subject=");
+    expect(href).toContain(encodeURIComponent(documento().protocolo.numero).replace(/%2F/g, "%2F"));
+  });
+
+  it("a mensagem cita protocolo, código de conferência e fonte", async () => {
+    const usuario = userEvent.setup();
+    const doc = documento();
+    render(<DocumentoDialog documento={doc} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
+
+    await usuario.click(screen.getByRole("button", { name: /encaminhar/i }));
+
+    const previa = screen.getByText(/Encaminho em anexo/i);
+    expect(previa.textContent).toContain(doc.protocolo.numero);
+    expect(previa.textContent).toContain(doc.protocolo.sha);
+    expect(previa.textContent).toMatch(/Painel ClimaBrasil/);
+  });
+
+  it("sugere destinatários pelo tipo de peça, e diz que são sugestões", async () => {
+    const usuario = userEvent.setup();
+    render(<DocumentoDialog documento={documento()} nomeEnte="Boa Vista" aberto onFechar={vi.fn()} />);
+
+    await usuario.click(screen.getByRole("button", { name: /encaminhar/i }));
+
+    expect(screen.getByText(/Gabinete do chefe do Executivo/i)).toBeInTheDocument();
+    expect(screen.getByText(/não preenche destinatário por conta própria/i)).toBeInTheDocument();
   });
 });

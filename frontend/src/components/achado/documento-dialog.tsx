@@ -1,9 +1,11 @@
-import { FileDown, Printer } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, FileDown, Mail, Printer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { codigoAchado, formatarNumero, formatarPercentual } from "@/lib/achados";
 import { baixarDocumentoPdf } from "@/lib/documento-pdf";
+import { linkDeRascunho, redigirRascunho } from "@/lib/encaminhar";
 import type { DocumentoGerado } from "@/lib/documentos";
 
 /**
@@ -29,14 +31,21 @@ function Rotulo({ children }: { children: React.ReactNode }) {
 
 export function DocumentoDialog({
   documento,
+  nomeEnte,
   aberto,
   onFechar,
 }: {
   documento: DocumentoGerado | null;
+  nomeEnte: string;
   aberto: boolean;
   onFechar: () => void;
 }) {
+  const [encaminhar, setEncaminhar] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
   if (!documento) return null;
+
+  const rascunho = redigirRascunho(documento, nomeEnte);
 
   const { protocolo, quadro, blocos, timbre } = documento;
 
@@ -66,12 +75,90 @@ export function DocumentoDialog({
               <Printer className="mr-1.5 size-3.5" aria-hidden />
               Imprimir
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-11"
+              onClick={() => setEncaminhar((v) => !v)}
+              aria-expanded={encaminhar}
+            >
+              <Mail className="mr-1.5 size-3.5" aria-hidden />
+              Encaminhar
+            </Button>
             <Button size="sm" className="h-11" onClick={() => void baixarDocumentoPdf(documento)}>
               <FileDown className="mr-1.5 size-3.5" aria-hidden />
               Baixar PDF
             </Button>
           </div>
         </div>
+
+        {/*
+          O produto monta tudo até a borda do envio. O disparo é ato do usuário:
+          uma peça de controle enviada em nome de alguém que não leu o que ia é
+          um risco que nenhum ganho de fluidez compensa.
+        */}
+        {encaminhar && (
+          <div data-acoes-documento className="border-b bg-muted/40 px-4 py-3">
+            <p className="text-sm font-semibold">Mensagem de encaminhamento</p>
+            <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-xs text-muted-foreground">
+              <li>Baixe o PDF (nenhum cliente de e-mail aceita anexo por link).</li>
+              <li>Abra o rascunho, escolha os destinatários e anexe o arquivo.</li>
+              <li>Leia e envie — o envio é seu, não do sistema.</li>
+            </ol>
+
+            <div className="mt-2.5 rounded-lg border bg-background p-2.5">
+              <p className="text-xs font-semibold">{rascunho.assunto}</p>
+              <pre className="mt-1.5 max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
+                {rascunho.corpo}
+              </pre>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button asChild size="sm" className="h-11">
+                <a href={linkDeRascunho(rascunho)}>
+                  <Mail className="mr-1.5 size-3.5" aria-hidden />
+                  Abrir no meu e-mail
+                </a>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(`${rascunho.assunto}
+
+${rascunho.corpo}`);
+                  setCopiado(true);
+                  setTimeout(() => setCopiado(false), 2000);
+                }}
+              >
+                {copiado ? (
+                  <Check className="mr-1.5 size-3.5" aria-hidden />
+                ) : (
+                  <Copy className="mr-1.5 size-3.5" aria-hidden />
+                )}
+                {copiado ? "Copiado" : "Copiar texto"}
+              </Button>
+            </div>
+
+            <div className="mt-2.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Destinatários prováveis
+              </p>
+              <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                {rascunho.sugestoes.map((sug) => (
+                  <li key={sug.rotulo}>
+                    {sug.rotulo} <span className="opacity-70">— {sug.quando}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                São sugestões pelo tipo de peça, não endereços: o produto não tem cadastro de
+                contatos e não preenche destinatário por conta própria.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* min-h-0 desarma o `min-height: auto` implícito do item de grade. */}
         <div className="min-h-0 overflow-y-auto overscroll-contain bg-white">

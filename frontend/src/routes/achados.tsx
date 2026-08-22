@@ -553,6 +553,7 @@ function AchadosPage() {
 
       <DocumentoDialog
         documento={documento}
+        nomeEnte={enteAtivo ?? ""}
         aberto={!!documento}
         onFechar={() => setDocumento(null)}
       />

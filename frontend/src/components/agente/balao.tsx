@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowUp, Bot, Loader2, Sparkles, X } from "lucide-react";
+import { ArrowUp, Sparkles, X } from "lucide-react";
 
+import { Mascote, type EstadoMascote } from "@/components/agente/mascote";
 import { Button } from "@/components/ui/button";
 import { PERGUNTAS_INICIAIS, type Insight } from "@/lib/agente/insights";
 import { perguntarAoAgente } from "@/lib/agente/servidor";
@@ -109,6 +110,19 @@ export function BalaoAgente({
     [contexto, mensagens, pensando],
   );
 
+  /**
+   * O estado do mascote substitui texto de status: "consultando" é o anel
+   * girando, não a frase. A ordem importa — pensar vence tudo, depois peça
+   * pronta, depois observação crítica.
+   */
+  const estadoDoMascote: EstadoMascote = pensando
+    ? "consultando"
+    : mensagens.some((m) => m.papel === "assistente" && !m.indisponivel)
+      ? "pronto"
+      : insights.some((i) => i.tom === "critico")
+        ? "achado"
+        : "repouso";
+
   if (!aberto) {
     return (
       <button
@@ -121,14 +135,8 @@ export function BalaoAgente({
         )}
         aria-label="Abrir o assistente do ClimaSim"
       >
-        <Bot className="size-5" aria-hidden />
+        <Mascote estado={estadoDoMascote} tamanho={30} />
         <span className="text-sm font-semibold">Assistente</span>
-        {insights.some((i) => i.tom === "critico") && (
-          <span
-            className="size-2 rounded-full bg-[var(--sev-critico)] ring-2 ring-primary-foreground/60"
-            aria-label="Há observação crítica sobre esta tela"
-          />
-        )}
       </button>
     );
   }
@@ -143,7 +151,7 @@ export function BalaoAgente({
     >
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <p className="flex items-center gap-2 text-sm font-bold">
-          <Bot className="size-4 text-primary" aria-hidden />
+          <Mascote estado={estadoDoMascote} tamanho={26} className="text-primary" />
           Assistente
         </p>
         <button
@@ -221,7 +229,7 @@ export function BalaoAgente({
 
         {pensando && (
           <p className="mr-2 flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            <Mascote estado="consultando" tamanho={22} className="text-primary" />
             Consultando os dados…
           </p>
         )}
