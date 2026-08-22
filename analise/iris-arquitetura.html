@@ -1,0 +1,502 @@
+<title>Mundico · Arquitetura</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;0,900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --green-500:#018A3C; --green-900:#005222; --teal-700:#017147;
+    --lime-400:#D8E814; --lime-500:#4CCA0F;
+    --indigo-800:#333355; --blue-400:#62A4FA;
+    --yellow-300:#F8D668; --amber-500:#EEA10D; --red-600:#CB1615;
+    --neutral-900:#1E1E1E; --neutral-100:#D9E0EA;
+    --bg:#F4F7F5; --surface:#FFFFFF; --surface-2:#EAF0EC;
+    --ink:var(--indigo-800); --body:#2C3340; --muted:#5C6675; --faint:#8A93A1;
+    --line:var(--neutral-100); --line-strong:#BCC7D4;
+    --accent:var(--green-500); --accent-deep:var(--green-900);
+    --shadow:0 2px 8px rgb(30 30 30 / .06), 0 12px 32px -18px rgb(30 30 30 / .22);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0C1418; --surface:#132028; --surface-2:#1A2A33;
+      --ink:#E6EDF2; --body:#C6D2DB; --muted:#9AA8B4; --faint:#6E7C89;
+      --line:#22343E; --line-strong:#2F4652;
+      --accent:#39C46E; --accent-deep:#0B8F4E;
+      --shadow:0 2px 8px rgb(0 0 0 / .4), 0 16px 40px -20px rgb(0 0 0 / .7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0C1418; --surface:#132028; --surface-2:#1A2A33;
+    --ink:#E6EDF2; --body:#C6D2DB; --muted:#9AA8B4; --faint:#6E7C89;
+    --line:#22343E; --line-strong:#2F4652;
+    --accent:#39C46E; --accent-deep:#0B8F4E;
+    --shadow:0 2px 8px rgb(0 0 0 / .4), 0 16px 40px -20px rgb(0 0 0 / .7);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--body);
+    font-family:"Aptos","Source Sans 3",Arial,sans-serif;font-size:17px;line-height:1.55;
+    font-weight:300;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1020px;margin:0 auto;padding:0 24px}
+  h1,h2,h3,h4{margin:0;color:var(--ink);text-wrap:balance}
+  h1{font-weight:900;font-size:clamp(2rem,5.2vw,3.1rem);line-height:1;letter-spacing:-.025em}
+  h2{font-weight:800;font-size:clamp(1.4rem,3.3vw,1.95rem);line-height:1.08;letter-spacing:-.018em}
+  h3{font-weight:700;font-size:1.08rem}
+  h4{font-weight:600;font-size:.95rem}
+  p{margin:0 0 1rem}
+  strong{font-weight:600;color:var(--ink)}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);
+    padding:1px 5px;border-radius:5px;color:var(--ink)}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--accent-deep)}
+  .kicker{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+
+  header.hero{background:linear-gradient(160deg,#1E1E1E 0%,#333355 100%);color:#fff;padding:60px 0 50px}
+  header.hero h1{color:#fff} header.hero .eyebrow{color:var(--lime-400)}
+  .hero .lede{font-size:clamp(1.02rem,2vw,1.2rem);max-width:60ch;margin-top:18px;color:rgb(255 255 255 / .86)}
+  .hero .em{color:var(--lime-400);font-weight:700}
+  .brandline{display:flex;align-items:center;gap:13px;margin-bottom:30px}
+  .bn{font-weight:800;font-size:1rem;color:#fff}
+  .bn span{display:block;font-family:"IBM Plex Mono",monospace;font-weight:400;font-size:10.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:rgb(255 255 255 / .55)}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  .sec-head{margin-bottom:24px}
+  .sec-head .kicker{display:block;margin-bottom:10px}
+  .lead-in{font-size:1.06rem;color:var(--muted);max-width:66ch}
+
+  figure{margin:24px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:26px 20px 16px;box-shadow:var(--shadow);overflow-x:auto}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto;min-width:660px}
+  figcaption{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+    font-size:.88rem;color:var(--muted);line-height:1.5}
+  figcaption b{color:var(--ink);font-weight:600}
+
+  .tbl{overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:680px;background:var(--surface)}
+  th,td{text-align:left;padding:13px 15px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:700;font-size:.76rem;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint);background:var(--surface-2)}
+  td{font-size:.9rem;color:var(--muted)}
+  td b{color:var(--ink);font-weight:600;font-size:.94rem}
+  td .mono{font-size:.82rem;color:var(--accent-deep)}
+  tr:last-child td{border-bottom:none}
+  .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:9.5px;
+    letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:5px;font-weight:600}
+  .pill.r{background:rgb(1 138 60 / .12);color:var(--accent-deep)}
+  .pill.w{background:rgb(238 161 13 / .18);color:#8A5D00}
+  .pill.d{background:rgb(203 22 21 / .12);color:var(--red-600)}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .card h3{margin-bottom:6px;font-size:1rem}
+  .card p{margin:0;font-size:.9rem;color:var(--muted)}
+  .card .n{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent-deep);margin-bottom:9px}
+  @media (max-width:760px){.cards{grid-template-columns:1fr}}
+
+  pre{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;overflow-x:auto;box-shadow:var(--shadow);margin:20px 0 0}
+  pre code{background:none;padding:0;font-size:12.5px;line-height:1.65;color:var(--body)}
+  .cmt{color:var(--faint)}
+  .kw{color:var(--accent-deep);font-weight:600}
+  .str{color:#8A5D00}
+  :root[data-theme="dark"] .str{color:var(--yellow-300)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .str{color:var(--yellow-300)}}
+
+  .callout{margin-top:24px;background:var(--surface);border:1px solid var(--line);
+    border-left:4px solid var(--lime-400);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow)}
+  .callout .t{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px}
+  .callout p{margin:0;font-size:1rem;color:var(--ink)}
+  .callout.warn{border-left-color:var(--red-600)}
+  .callout.warn .t{color:var(--red-600)}
+
+  footer{padding:28px 0 64px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    color:var(--faint);font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.05em}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brandline">
+      <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+        <rect width="38" height="38" rx="11" fill="#D8E814"/>
+        <g fill="#005222">
+          <rect x="9" y="15" width="4" height="8" rx="2"/><rect x="15" y="10" width="4" height="18" rx="2"/>
+          <rect x="21" y="13" width="4" height="12" rx="2"/><rect x="27" y="17" width="3" height="4" rx="1.5"/>
+        </g>
+      </svg>
+      <div class="bn">Mundico<span>Arquitetura e capacidades</span></div>
+    </div>
+    <div class="eyebrow">Documento técnico · Groq + ferramentas determinísticas</div>
+    <h1>O modelo <span class="em">orquestra</span>.<br>Nunca é a fonte do número.</h1>
+    <p class="lede">Como Mundico é montada: inferência rápida no Groq para entender a pergunta e escolher a ferramenta, e código determinístico nosso para produzir todo dado, todo documento e todo protocolo.</p>
+  </div>
+</header>
+
+<main>
+  <!-- 01 · ARQUITETURA -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">01 · Arquitetura</span>
+        <h2>Onde o modelo entra — e onde ele é proibido de entrar.</h2>
+      </div>
+      <p class="lead-in">O desenho tem uma única regra estrutural: <strong>o LLM só vê dados que vieram das nossas funções</strong>, e o texto de saída é montado sobre esses retornos. Se a ferramenta não devolveu, Mundico não afirma.</p>
+
+      <figure>
+        <svg viewBox="0 0 980 470" role="img" aria-label="Arquitetura: a pergunta do usuário vai ao orquestrador, que consulta o Groq apenas para decidir qual ferramenta chamar; as ferramentas leem a base determinística e o gerador de documentos; o resultado volta ao Groq só para redação, e ações de envio exigem confirmação humana.">
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="av" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#018A3C"/>
+            </marker>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#CB1615"/>
+            </marker>
+          </defs>
+
+          <!-- camada cliente -->
+          <text x="20" y="24" font-family="IBM Plex Mono,monospace" font-size="11" fill="currentColor" opacity=".5" letter-spacing="1">NAVEGADOR</text>
+          <rect x="20" y="38" width="186" height="70" rx="11" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
+          <text x="36" y="63" font-family="Source Sans 3,sans-serif" font-size="13.5" font-weight="700" fill="currentColor">Painel + Mundico</text>
+          <text x="36" y="82" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">contexto: ente aberto,</text>
+          <text x="36" y="96" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">achados selecionados</text>
+
+          <path d="M206,73 L266,73" stroke="currentColor" stroke-width="1.6" opacity=".6" marker-end="url(#a)"/>
+          <text x="214" y="66" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">pergunta</text>
+
+          <!-- orquestrador -->
+          <rect x="266" y="26" width="230" height="94" rx="11" fill="none" stroke="#018A3C" stroke-width="2.2"/>
+          <text x="284" y="52" font-family="Source Sans 3,sans-serif" font-size="13.5" font-weight="700" fill="#018A3C">Orquestrador</text>
+          <text x="284" y="70" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".75">valida · roteia · registra</text>
+          <text x="284" y="86" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".75">guarda a chave do Groq</text>
+          <text x="284" y="105" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".75">nunca expõe ao cliente</text>
+
+          <!-- groq -->
+          <path d="M496,52 L580,52" stroke="currentColor" stroke-width="1.6" opacity=".6" marker-end="url(#a)"/>
+          <text x="538" y="45" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="currentColor" opacity=".6">1. escolhe</text>
+          <rect x="580" y="26" width="200" height="94" rx="11" fill="none" stroke="#333355" stroke-width="2"/>
+          <text x="598" y="52" font-family="Source Sans 3,sans-serif" font-size="13.5" font-weight="700" fill="currentColor">Groq</text>
+          <text x="598" y="70" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".75">modelo aberto · LPU</text>
+          <text x="598" y="86" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".75">function calling</text>
+          <text x="598" y="105" font-family="IBM Plex Mono,monospace" font-size="10" fill="#CB1615">sem acesso à base</text>
+
+          <path d="M580,96 L500,96" stroke="currentColor" stroke-width="1.6" opacity=".6" marker-end="url(#a)"/>
+          <text x="538" y="112" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="currentColor" opacity=".6">nome + args</text>
+
+          <!-- ferramentas -->
+          <text x="20" y="164" font-family="IBM Plex Mono,monospace" font-size="11" fill="currentColor" opacity=".5" letter-spacing="1">FERRAMENTAS DETERMINÍSTICAS · A ÚNICA FONTE DE FATO</text>
+          <rect x="20" y="178" width="760" height="112" rx="12" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".3"/>
+
+          <rect x="38" y="198" width="168" height="74" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".6"/>
+          <text x="52" y="220" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Base do Painel</text>
+          <text x="52" y="238" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">49 entes · 2.245 itens</text>
+          <text x="52" y="254" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">pareceres da auditoria</text>
+
+          <rect x="222" y="198" width="168" height="74" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".6"/>
+          <text x="236" y="220" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Metodologia</text>
+          <text x="236" y="238" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">15 componentes</text>
+          <text x="236" y="254" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">base normativa</text>
+
+          <rect x="406" y="198" width="168" height="74" rx="9" fill="none" stroke="#018A3C" stroke-width="2"/>
+          <text x="420" y="220" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="#018A3C">Gerador de peças</text>
+          <text x="420" y="238" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">4 modelos oficiais</text>
+          <text x="420" y="254" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">protocolo + hash</text>
+
+          <rect x="590" y="198" width="172" height="74" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".6"/>
+          <text x="604" y="220" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">SICONFI · IBGE</text>
+          <text x="604" y="238" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">receita · população</text>
+          <text x="604" y="254" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">timeout, não bloqueia</text>
+
+          <path d="M340,120 L340,178" stroke="#018A3C" stroke-width="1.8" marker-end="url(#av)"/>
+          <text x="348" y="152" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="#018A3C">2. executa</text>
+
+          <path d="M700,178 L700,132 L510,132" stroke="#018A3C" stroke-width="1.8" fill="none" marker-end="url(#av)"/>
+          <text x="540" y="146" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="#018A3C">3. dados + fonte</text>
+
+          <path d="M780,86 L906,86 L906,312 L139,312 L139,336" stroke="currentColor" stroke-width="1.6" fill="none" opacity=".6" marker-end="url(#a)"/>
+          <text x="300" y="306" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".65">4. redige sobre o retorno — e só sobre ele</text>
+
+          <!-- saidas -->
+          <text x="20" y="326" font-family="IBM Plex Mono,monospace" font-size="11" fill="currentColor" opacity=".5" letter-spacing="1">SAÍDAS</text>
+          <rect x="20" y="340" width="238" height="66" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
+          <text x="38" y="364" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Resposta com fonte</text>
+          <text x="38" y="382" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">texto + item + data da extração</text>
+          <text x="38" y="397" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">imediata</text>
+
+          <rect x="274" y="340" width="238" height="66" rx="10" fill="none" stroke="#018A3C" stroke-width="2"/>
+          <text x="292" y="364" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="#018A3C">Peça em PDF</text>
+          <text x="292" y="382" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">gerada por código, não pelo modelo</text>
+          <text x="292" y="397" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">reproduzível</text>
+
+          <rect x="528" y="340" width="252" height="66" rx="10" fill="none" stroke="#CB1615" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="546" y="364" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="#CB1615">Envio e agendamento</text>
+          <text x="546" y="382" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".75">bloqueado até confirmação</text>
+          <text x="546" y="397" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".75">humana, com destinatário à vista</text>
+
+          <path d="M490,272 L393,272 L393,336" stroke="#018A3C" stroke-width="1.8" fill="none" marker-end="url(#av)"/>
+          <path d="M654,290 L654,336" stroke="#CB1615" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar)"/>
+
+          <text x="20" y="440" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".65">Linha cheia = fluxo automático.  Linha tracejada vermelha = exige confirmação humana explícita.</text>
+          <text x="20" y="458" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".65">O Groq recebe apenas: a pergunta, o contexto da tela e o retorno das ferramentas. Nunca a base inteira.</text>
+        </svg>
+        <figcaption><b>O ponto que decide tudo.</b> A seta 3 é o cerne: o modelo só redige <em>depois</em> de receber o retorno da ferramenta, e sobre ele. Isso torna a alucinação de número estruturalmente improvável — não há espaço no fluxo onde o modelo precise inventar. É a diferença entre “IA que recomenda política pública” e <strong>IA que lê para você um dado que já existia</strong>.</figcaption>
+      </figure>
+
+      <div class="cards">
+        <div class="card">
+          <div class="n">Por que Groq</div>
+          <h3>Latência de conversa</h3>
+          <p>A inferência em LPU responde em fração de segundo. Num painel, o assistente que demora 6 s não é usado — a velocidade aqui é requisito de produto, não vaidade técnica.</p>
+        </div>
+        <div class="card">
+          <div class="n">Modelo</div>
+          <h3>Aberto e substituível</h3>
+          <p>Usar um modelo aberto servido pelo Groq (família Llama) com <em>function calling</em>. A camada de ferramentas é agnóstica: trocar de provedor não muda a lógica de negócio.</p>
+        </div>
+        <div class="card">
+          <div class="n">Custo e sigilo</div>
+          <h3>Contexto mínimo</h3>
+          <p>Não se envia a base ao modelo — só a pergunta, o ente aberto e o retorno da chamada. Contexto pequeno significa resposta barata, rápida e sem vazar acervo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · CAPACIDADES -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">02 · Mapa de capacidades</span>
+        <h2>O que Mundico sabe fazer — rota a rota.</h2>
+      </div>
+      <p class="lead-in">Cada capacidade é uma função com contrato explícito. As de leitura executam direto; as de escrita param e pedem confirmação.</p>
+
+      <div class="tbl">
+        <table>
+          <thead>
+            <tr><th>Capacidade</th><th>O que faz</th><th>Fonte</th><th>Permissão</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Consultar ente</b><br><span class="mono">consultarEnte</span></td>
+              <td>Devolve maturidade, lacunas, posição nacional e o diagnóstico de colisão.</td>
+              <td>Base do Painel + IBGE</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Explicar requisito</b><br><span class="mono">explicarRequisito</span></td>
+              <td>Diz o que a metodologia exigia naquele item e qual norma o sustenta.</td>
+              <td>Metodologia oficial</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Ler o parecer</b><br><span class="mono">lerParecer</span></td>
+              <td>Devolve o texto que a auditoria registrou para o achado.</td>
+              <td>Coluna de parecer</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Quem já resolveu</b><br><span class="mono">buscarReferencia</span></td>
+              <td>Encontra entes com “Estágio avançado” no mesmo item e o que fizeram.</td>
+              <td>Base do Painel</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Comparar</b><br><span class="mono">compararEntes</span></td>
+              <td>Confronta com a média nacional ou com entes escolhidos, eixo a eixo.</td>
+              <td>Agregados nacionais</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Priorizar</b><br><span class="mono">priorizarAchados</span></td>
+              <td>Ordena por população exposta e criticidade; explica o critério usado.</td>
+              <td>Base + IBGE</td>
+              <td><span class="pill r">Leitura</span></td>
+            </tr>
+            <tr>
+              <td><b>Gerar peça</b><br><span class="mono">gerarDocumento</span></td>
+              <td>Monta ofício, requerimento LAI, plano de providências ou requerimento legislativo.</td>
+              <td>Gerador determinístico</td>
+              <td><span class="pill w">Confirmar</span></td>
+            </tr>
+            <tr>
+              <td><b>Enviar</b><br><span class="mono">enviarPeca</span></td>
+              <td>Encaminha por e-mail a um destinatário informado pelo usuário.</td>
+              <td>—</td>
+              <td><span class="pill d">Confirmação dupla</span></td>
+            </tr>
+            <tr>
+              <td><b>Monitorar</b><br><span class="mono">agendarMonitoramento</span></td>
+              <td>Avisa quando a próxima safra mudar o requisito acompanhado.</td>
+              <td>Base versionada</td>
+              <td><span class="pill w">Confirmar</span></td>
+            </tr>
+            <tr>
+              <td><b>Exportar</b><br><span class="mono">exportarRecorte</span></td>
+              <td>Gera CSV do recorte em tela, com metodologia e data da extração.</td>
+              <td>Base do Painel</td>
+              <td><span class="pill w">Confirmar</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <div class="t">Regra de permissão</div>
+        <p><strong>Leitura</strong> executa sem perguntar. <strong>Confirmar</strong> mostra o que será feito e espera um clique. <strong>Confirmação dupla</strong> exibe destinatário e conteúdo integral antes de liberar o envio — nenhuma peça sai do sistema sem que uma pessoa tenha visto exatamente o que vai sair.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · CONTRATO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">03 · Contrato de ferramenta</span>
+        <h2>Como uma capacidade é declarada.</h2>
+      </div>
+      <p class="lead-in">O modelo recebe apenas a assinatura. A execução, a validação e a citação da fonte ficam do nosso lado.</p>
+
+<pre><code><span class="cmt">// Declaração enviada ao Groq — o modelo escolhe, não executa.</span>
+{
+  <span class="kw">name</span>: <span class="str">"buscarReferencia"</span>,
+  <span class="kw">description</span>: <span class="str">"Entes avaliados como 'Estágio avançado' no mesmo requisito, "</span> +
+               <span class="str">"com a prática que a auditoria registrou."</span>,
+  <span class="kw">parameters</span>: {
+    <span class="kw">requisito</span>: <span class="str">"código do item, ex.: P5A"</span>,
+    <span class="kw">excluir</span>:   <span class="str">"ente a omitir da lista (o próprio consultado)"</span>
+  }
+}
+
+<span class="cmt">// Retorno do nosso lado — sempre com procedência anexada.</span>
+{
+  <span class="kw">referencias</span>: [
+    { <span class="kw">ente</span>: <span class="str">"Minas Gerais"</span>, <span class="kw">tipo</span>: <span class="str">"Estado"</span>, <span class="kw">texto</span>: <span class="str">"..."</span> }
+  ],
+  <span class="kw">fonte</span>: {
+    <span class="kw">base</span>:      <span class="str">"Painel ClimaBrasil / TCU"</span>,
+    <span class="kw">versao</span>:    <span class="str">"Versão de Avaliação 2025"</span>,
+    <span class="kw">extracao</span>:  <span class="str">"2025-09-12"</span>,
+    <span class="kw">requisito</span>: <span class="str">"P5A"</span>
+  }
+}</code></pre>
+
+      <div class="callout warn">
+        <div class="t">Instrução de sistema — a linha que não se negocia</div>
+        <p>“Você responde <strong>exclusivamente</strong> com dados retornados pelas ferramentas. Se a informação não estiver no retorno, diga que não sabe e ofereça a consulta adequada. Nunca estime, complete ou infira números. Toda afirmação quantitativa deve vir acompanhada do campo <code>fonte</code> recebido. Nunca afirme relação de causa e efeito entre lacuna e desastre.”</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · AUTOMAÇÃO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">04 · Fluxos de automação</span>
+        <h2>Três rotinas que devolvem tempo ao gestor.</h2>
+      </div>
+      <p class="lead-in">O ganho real não é conversar — é encurtar o caminho entre perceber um problema e ter a peça pronta na mão.</p>
+
+      <div class="cards">
+        <div class="card">
+          <div class="n">Rotina 1 · sob demanda</div>
+          <h3>Da pergunta ao ofício</h3>
+          <p>“Gera o ofício das lacunas de defesa civil.” Mundico prioriza, monta a peça com protocolo, mostra na tela e espera confirmação para enviar. O que levava uma tarde de compilação vira um minuto.</p>
+        </div>
+        <div class="card">
+          <div class="n">Rotina 2 · periódica</div>
+          <h3>Vigília de safra</h3>
+          <p>Quando o Painel publica nova avaliação, Mundico compara com a anterior e avisa o que mudou nos requisitos monitorados — inclusive o que <em>não</em> mudou depois de um encaminhamento.</p>
+        </div>
+        <div class="card">
+          <div class="n">Rotina 3 · agregada</div>
+          <h3>Boletim do território</h3>
+          <p>Recorte por região ou porte, com os requisitos mais frágeis do grupo. Serve a associações de municípios e a tribunais estaduais que acompanham várias jurisdições.</p>
+        </div>
+      </div>
+
+      <figure>
+        <svg viewBox="0 0 940 150" role="img" aria-label="Fluxo da rotina sob demanda: pergunta, priorização, geração da peça, revisão humana obrigatória e então envio com registro em trilha de auditoria.">
+          <defs>
+            <marker id="f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g>
+            <rect x="14" y="40" width="152" height="58" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+            <text x="30" y="65" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">1 · Pergunta</text>
+            <text x="30" y="83" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">em linguagem natural</text>
+
+            <path d="M166,69 L200,69" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#f)"/>
+
+            <rect x="200" y="40" width="152" height="58" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+            <text x="216" y="65" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">2 · Prioriza</text>
+            <text x="216" y="83" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">exposição + criticidade</text>
+
+            <path d="M352,69 L386,69" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#f)"/>
+
+            <rect x="386" y="40" width="152" height="58" rx="10" fill="none" stroke="#018A3C" stroke-width="2"/>
+            <text x="402" y="65" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="#018A3C">3 · Monta a peça</text>
+            <text x="402" y="83" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">protocolo + hash</text>
+
+            <path d="M538,69 L572,69" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#f)"/>
+
+            <rect x="572" y="40" width="164" height="58" rx="10" fill="none" stroke="#CB1615" stroke-width="2.2"/>
+            <text x="588" y="65" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="700" fill="#CB1615">4 · Revisão humana</text>
+            <text x="588" y="83" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".75">obrigatória, sem atalho</text>
+
+            <path d="M736,69 L770,69" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#f)"/>
+
+            <rect x="770" y="40" width="156" height="58" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+            <text x="786" y="65" font-family="Source Sans 3,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">5 · Envia e registra</text>
+            <text x="786" y="83" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">entra na trilha</text>
+          </g>
+          <text x="14" y="128" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".65">O passo 4 não pode ser desativado por configuração. É o que mantém a responsabilidade com uma pessoa identificável.</text>
+        </svg>
+        <figcaption><b>Por que a revisão é estrutural e não uma opção.</b> Um ofício que sai de um tribunal de contas tem consequência jurídica. Automatizar a compilação é ganho legítimo; automatizar a assinatura seria transferir responsabilidade a um modelo estatístico — e nenhuma banca de controle aceitaria isso.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 05 · IMPLANTAÇÃO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">05 · Implantação</span>
+        <h2>O caminho mais curto até funcionar.</h2>
+      </div>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Etapa</th><th>Entrega</th><th>Depende de</th></tr></thead>
+          <tbody>
+            <tr><td><b>1 · Ferramentas</b></td><td>As seis capacidades de leitura sobre a base já embarcada. Funcionam sem nenhum modelo.</td><td><span class="mono">achados.ts</span>, <span class="mono">documentos.ts</span> — já existem</td></tr>
+            <tr><td><b>2 · Rota servidora</b></td><td>Endpoint que guarda a chave do Groq e executa o laço de chamada de ferramenta.</td><td>Chave de API · variável de ambiente</td></tr>
+            <tr><td><b>3 · Mundico na tela</b></td><td>Botão flutuante, painel de conversa e os quatro estados das barras.</td><td>SVG do mascote — desenhado neste documento</td></tr>
+            <tr><td><b>4 · Ações</b></td><td>Ligação das respostas aos botões de gerar peça, com confirmação.</td><td>Etapa 1 e 3</td></tr>
+            <tr><td><b>5 · Automação</b></td><td>Vigília de safra e boletim de território.</td><td>Segunda safra oficial do Painel</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="t">Dependência honesta</div>
+        <p>A etapa 5 <strong>não é demonstrável hoje</strong>: exige uma segunda safra real do Painel ClimaBrasil. O arquivo de 2026 presente no repositório é sintético — gerado por script que apenas troca o ano — e <strong>não pode ser apresentado como evolução real</strong>. Marcar como roadmap protege a credibilidade de tudo o mais.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>MUNDICO · ARQUITETURA · CLIMATON BRASIL 2026</span>
+    <span>O MODELO ORQUESTRA · O CÓDIGO RESPONDE</span>
+  </div>
+</footer>

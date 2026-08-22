@@ -1,0 +1,584 @@
+<title>Mundico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    /* tokens do design system Climaton Brasil 2026 */
+    --green-500:#018A3C; --green-900:#005222; --teal-700:#017147;
+    --lime-400:#D8E814; --lime-500:#4CCA0F;
+    --indigo-800:#333355; --blue-400:#62A4FA;
+    --yellow-300:#F8D668; --amber-500:#EEA10D; --red-600:#CB1615;
+    --neutral-900:#1E1E1E; --neutral-100:#D9E0EA; --white:#FFFFFF;
+
+    --bg:#F4F7F5;
+    --surface:var(--white);
+    --surface-2:#EAF0EC;
+    --ink:var(--indigo-800);
+    --body:#2C3340;
+    --muted:#5C6675;
+    --faint:#8A93A1;
+    --line:var(--neutral-100);
+    --line-strong:#BCC7D4;
+    --accent:var(--green-500);
+    --accent-deep:var(--green-900);
+    --shadow:0 2px 8px rgb(30 30 30 / .06), 0 12px 32px -18px rgb(30 30 30 / .22);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0C1418; --surface:#132028; --surface-2:#1A2A33;
+      --ink:#E6EDF2; --body:#C6D2DB; --muted:#9AA8B4; --faint:#6E7C89;
+      --line:#22343E; --line-strong:#2F4652;
+      --accent:#39C46E; --accent-deep:#0B8F4E;
+      --shadow:0 2px 8px rgb(0 0 0 / .4), 0 16px 40px -20px rgb(0 0 0 / .7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0C1418; --surface:#132028; --surface-2:#1A2A33;
+    --ink:#E6EDF2; --body:#C6D2DB; --muted:#9AA8B4; --faint:#6E7C89;
+    --line:#22343E; --line-strong:#2F4652;
+    --accent:#39C46E; --accent-deep:#0B8F4E;
+    --shadow:0 2px 8px rgb(0 0 0 / .4), 0 16px 40px -20px rgb(0 0 0 / .7);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--body);
+    font-family:"Aptos","Source Sans 3",Arial,sans-serif;
+    font-size:17px;line-height:1.55;font-weight:300;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1020px;margin:0 auto;padding:0 24px}
+  h1,h2,h3,h4{margin:0;color:var(--ink);text-wrap:balance}
+  h1{font-weight:900;font-size:clamp(2.1rem,5.6vw,3.4rem);line-height:.98;letter-spacing:-.025em}
+  h2{font-weight:800;font-size:clamp(1.45rem,3.4vw,2rem);line-height:1.08;letter-spacing:-.018em}
+  h3{font-weight:700;font-size:1.1rem;line-height:1.2}
+  h4{font-weight:600;font-size:.95rem}
+  p{margin:0 0 1rem}
+  strong{font-weight:600;color:var(--ink)}
+  a{color:var(--accent-deep)}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.86em;background:var(--surface-2);
+    padding:1px 5px;border-radius:5px;color:var(--ink)}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--accent-deep)}
+  .kicker{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+
+  /* hero: verde profundo + lima, o contraste proprietário do sistema */
+  header.hero{background:linear-gradient(135deg,#005222 0%,#017147 58%,#018A3C 100%);
+    color:#fff;padding:64px 0 56px;position:relative;overflow:hidden}
+  header.hero h1{color:#fff}
+  header.hero .eyebrow{color:var(--lime-400)}
+  .hero .lede{font-size:clamp(1.05rem,2.1vw,1.25rem);max-width:58ch;margin-top:20px;
+    color:rgb(255 255 255 / .88)}
+  .hero .em{color:var(--lime-400);font-weight:700}
+  .brandline{display:flex;align-items:center;gap:13px;margin-bottom:32px}
+  .bn{font-weight:800;font-size:1.02rem;color:#fff}
+  .bn span{display:block;font-family:"IBM Plex Mono",monospace;font-weight:400;
+    font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:rgb(255 255 255 / .6)}
+  /* onda de dados, grafismo de apoio */
+  .wave{position:absolute;right:-40px;bottom:-30px;opacity:.13;pointer-events:none}
+
+  section{padding:54px 0;border-bottom:1px solid var(--line)}
+  .sec-head{margin-bottom:26px}
+  .sec-head .kicker{display:block;margin-bottom:10px}
+  .lead-in{font-size:1.08rem;color:var(--muted);max-width:66ch}
+
+  figure{margin:24px 0 0;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:26px 22px 16px;box-shadow:var(--shadow);overflow-x:auto}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+    font-size:.88rem;color:var(--muted);line-height:1.5}
+  figcaption b{color:var(--ink);font-weight:600}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:22px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:22px;box-shadow:var(--shadow)}
+  .card h3{margin-bottom:6px}
+  .card p{margin:0;font-size:.94rem;color:var(--muted)}
+  .card .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:6px;
+    margin-bottom:11px;background:rgb(1 138 60 / .11);color:var(--accent-deep)}
+  .card .tag.a{background:rgb(216 232 20 / .3);color:#5A6100}
+  .card .tag.i{background:rgb(51 51 85 / .1);color:var(--indigo-800)}
+  :root[data-theme="dark"] .card .tag.a,
+  @media (prefers-color-scheme:dark){}
+
+  /* charts plan */
+  .chartlist{display:grid;gap:13px;margin-top:22px}
+  .chart{display:grid;grid-template-columns:150px 1fr;gap:20px;background:var(--surface);
+    border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+  .chart .viz{display:grid;place-items:center;background:var(--surface-2);border-radius:11px;padding:10px;min-height:96px}
+  .chart h3{margin-bottom:3px}
+  .chart .q{font-size:.86rem;color:var(--accent-deep);font-weight:600;margin-bottom:7px}
+  .chart p{margin:0;font-size:.9rem;color:var(--muted)}
+  .chart .meta{margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:10px;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+  @media (max-width:700px){.chart{grid-template-columns:1fr}.grid2,.grid3{grid-template-columns:1fr}}
+
+  /* estados do mascote */
+  .states{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:22px}
+  .state{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:16px;text-align:center;box-shadow:var(--shadow)}
+  .state svg{margin:0 auto 10px}
+  .state .n{font-weight:700;font-size:.92rem;color:var(--ink)}
+  .state .d{margin-top:4px;font-size:.8rem;color:var(--muted);line-height:1.4}
+  @media (max-width:640px){.states{grid-template-columns:repeat(2,1fr)}}
+
+  /* falas */
+  .talk{display:grid;gap:11px;margin-top:20px}
+  .bubble{display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:start}
+  .bubble .who{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    flex:none;font-weight:800;font-size:12px}
+  .bubble.u .who{background:var(--surface-2);color:var(--muted)}
+  .bubble.i .who{background:var(--green-900);color:var(--lime-400)}
+  .bubble .msg{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 16px;font-size:.94rem}
+  .bubble.i .msg{border-color:rgb(1 138 60 / .35)}
+  .bubble .msg .src{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);
+    letter-spacing:.04em;text-transform:uppercase}
+  .bubble .msg .act{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px}
+  .bubble .msg .act span{font-size:.78rem;font-weight:600;padding:5px 11px;border-radius:999px;
+    background:var(--lime-400);color:var(--neutral-900)}
+  .bubble .msg .act span.g{background:var(--surface-2);color:var(--muted)}
+
+  /* regras */
+  .rules{display:grid;gap:11px;margin-top:20px}
+  .rule{display:grid;grid-template-columns:30px 1fr;gap:14px;background:var(--surface);
+    border:1px solid var(--line);border-left:4px solid var(--red-600);border-radius:12px;
+    padding:15px 18px;box-shadow:var(--shadow)}
+  .rule.ok{border-left-color:var(--green-500)}
+  .rule .m{font-weight:900;font-size:1.1rem;line-height:1;color:var(--red-600);padding-top:2px}
+  .rule.ok .m{color:var(--green-500)}
+  .rule h4{margin-bottom:3px}
+  .rule p{margin:0;font-size:.9rem;color:var(--muted)}
+
+  .callout{margin-top:24px;border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);
+    background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--lime-400)}
+  .callout .t{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px}
+  .callout p{margin:0;font-size:1rem;color:var(--ink)}
+
+  footer{padding:28px 0 64px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    color:var(--faint);font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.05em}
+</style>
+
+<header class="hero">
+  <svg class="wave" width="420" height="220" viewBox="0 0 420 220" aria-hidden="true">
+    <g fill="#D8E814">
+      <rect x="0" y="120" width="14" height="100" rx="7"/><rect x="24" y="80" width="14" height="140" rx="7"/>
+      <rect x="48" y="140" width="14" height="80" rx="7"/><rect x="72" y="40" width="14" height="180" rx="7"/>
+      <rect x="96" y="100" width="14" height="120" rx="7"/><rect x="120" y="60" width="14" height="160" rx="7"/>
+      <rect x="144" y="150" width="14" height="70" rx="7"/><rect x="168" y="20" width="14" height="200" rx="7"/>
+      <rect x="192" y="110" width="14" height="110" rx="7"/><rect x="216" y="70" width="14" height="150" rx="7"/>
+      <rect x="240" y="130" width="14" height="90" rx="7"/><rect x="264" y="50" width="14" height="170" rx="7"/>
+      <rect x="288" y="160" width="14" height="60" rx="7"/><rect x="312" y="90" width="14" height="130" rx="7"/>
+      <rect x="336" y="30" width="14" height="190" rx="7"/><rect x="360" y="120" width="14" height="100" rx="7"/>
+      <rect x="384" y="70" width="14" height="150" rx="7"/>
+    </g>
+  </svg>
+
+  <div class="wrap">
+    <div class="brandline">
+      <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+        <rect width="38" height="38" rx="11" fill="#D8E814"/>
+        <g fill="#005222">
+          <rect x="9" y="15" width="4" height="8" rx="2"/>
+          <rect x="15" y="10" width="4" height="18" rx="2"/>
+          <rect x="21" y="13" width="4" height="12" rx="2"/>
+          <rect x="27" y="17" width="3" height="4" rx="1.5"/>
+        </g>
+      </svg>
+      <div class="bn">Mundico<span>Climaton Brasil 2026</span></div>
+    </div>
+    <div class="eyebrow">Planejamento visual · dashboard v2 e agente</div>
+    <h1>O painel mostra o dado.<br><span class="em">Mundico</span> explica, prioriza e encaminha.</h1>
+    <p class="lede">Plano de evolução do dashboard para apoio real à decisão, e o desenho de um agente que conversa com a tela, responde com fonte e dispara os fluxos de relatório — sem nunca ser a fonte do número.</p>
+  </div>
+</header>
+
+<main>
+  <!-- 01 · DASHBOARD -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">01 · Dashboard v2</span>
+        <h2>Cada gráfico responde a uma pergunta de decisão.</h2>
+      </div>
+      <p class="lead-in">Gráfico que não muda uma decisão é ornamento. O critério de inclusão abaixo é único: <strong>que pergunta este gráfico responde, e o que o gestor faz de diferente depois de vê-lo?</strong> Os dois primeiros já estão construídos; os quatro seguintes são o plano.</p>
+
+      <div class="chartlist">
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <polygon points="56,10 96,66 16,66" fill="none" stroke="#D9E0EA" stroke-width="1.5"/>
+              <polygon points="56,26 82,60 30,60" fill="none" stroke="#D9E0EA" stroke-width="1.5"/>
+              <polygon points="56,20 86,58 34,55" fill="#018A3C" fill-opacity=".28" stroke="#018A3C" stroke-width="2.2"/>
+              <polygon points="56,34 74,56 40,54" fill="none" stroke="#8A93A1" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Radar por eixo × média nacional</h3>
+            <p class="q">“Meu ente está pior que o país — em qual eixo?”</p>
+            <p>Sobrepõe o perfil do ente à média das 49 avaliações. O eixo que afunda abaixo do tracejado é o argumento que sustenta a cobrança orçamentária.</p>
+            <div class="meta">Construído · SVG próprio</div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <g>
+                <rect x="6" y="8" width="30" height="20" rx="4" fill="#CB1615" fill-opacity=".85"/>
+                <rect x="41" y="8" width="30" height="20" rx="4" fill="#EEA10D" fill-opacity=".85"/>
+                <rect x="76" y="8" width="30" height="20" rx="4" fill="#F8D668" fill-opacity=".9"/>
+                <rect x="6" y="31" width="30" height="20" rx="4" fill="#F8D668" fill-opacity=".7"/>
+                <rect x="41" y="31" width="30" height="20" rx="4" fill="#4CCA0F" fill-opacity=".6"/>
+                <rect x="76" y="31" width="30" height="20" rx="4" fill="#4CCA0F" fill-opacity=".8"/>
+                <rect x="6" y="54" width="30" height="20" rx="4" fill="#4CCA0F" fill-opacity=".9"/>
+                <rect x="41" y="54" width="30" height="20" rx="4" fill="#018A3C" fill-opacity=".8"/>
+                <rect x="76" y="54" width="30" height="20" rx="4" fill="#018A3C"/>
+              </g>
+            </svg>
+          </div>
+          <div>
+            <h3>Mapa de maturidade · 15 componentes</h3>
+            <p class="q">“Onde estou bem e onde estou mal, comparado ao país?”</p>
+            <p>Grade colorida ordenada do pior para o melhor, cada célula com o delta contra a média nacional. Substitui a leitura sequencial de uma lista longa.</p>
+            <div class="meta">Construído · grade + delta</div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <line x1="8" y1="62" x2="104" y2="62" stroke="#D9E0EA" stroke-width="1.5"/>
+              <g fill="#8A93A1">
+                <circle cx="18" cy="52" r="3.4"/><circle cx="27" cy="52" r="3.4"/><circle cx="34" cy="52" r="3.4"/>
+                <circle cx="43" cy="52" r="3.4"/><circle cx="50" cy="52" r="3.4"/><circle cx="58" cy="52" r="3.4"/>
+                <circle cx="66" cy="52" r="3.4"/><circle cx="75" cy="52" r="3.4"/><circle cx="88" cy="52" r="3.4"/>
+                <circle cx="34" cy="43" r="3.4"/><circle cx="50" cy="43" r="3.4"/><circle cx="58" cy="43" r="3.4"/>
+                <circle cx="50" cy="34" r="3.4"/>
+              </g>
+              <circle cx="24" cy="52" r="5.4" fill="#CB1615"/>
+              <line x1="24" y1="16" x2="24" y2="44" stroke="#CB1615" stroke-width="1.6" stroke-dasharray="3 2"/>
+              <text x="24" y="13" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#CB1615" font-weight="600">você</text>
+            </svg>
+          </div>
+          <div>
+            <h3>Distribuição nacional do requisito</h3>
+            <p class="q">“Minha falha é comum ou eu sou exceção?”</p>
+            <p>Para um requisito escolhido, mostra onde os 49 entes caem e destaca o seu. Muda a decisão: se quase todos falham, é problema estrutural e cabe articulação federativa; se só você falha, <strong>a solução já existe e é copiável</strong>.</p>
+            <div class="meta">Plano · dot plot, alta prioridade</div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <line x1="14" y1="66" x2="106" y2="66" stroke="#D9E0EA" stroke-width="1.5"/>
+              <line x1="14" y1="66" x2="14" y2="8" stroke="#D9E0EA" stroke-width="1.5"/>
+              <rect x="14" y="8" width="46" height="29" fill="#CB1615" fill-opacity=".07"/>
+              <circle cx="30" cy="20" r="7" fill="#CB1615" fill-opacity=".8"/>
+              <circle cx="46" cy="30" r="5" fill="#EEA10D" fill-opacity=".8"/>
+              <circle cx="72" cy="26" r="4" fill="#F8D668"/>
+              <circle cx="60" cy="50" r="3.4" fill="#8A93A1"/>
+              <circle cx="88" cy="55" r="3" fill="#8A93A1"/>
+              <circle cx="96" cy="42" r="3.4" fill="#8A93A1"/>
+              <text x="20" y="76" font-family="IBM Plex Mono,monospace" font-size="7" fill="#8A93A1">esforço →</text>
+            </svg>
+          </div>
+          <div>
+            <h3>Matriz de priorização</h3>
+            <p class="q">“Por onde começo, com o orçamento que tenho?”</p>
+            <p>População exposta no eixo vertical, esforço estimado no horizontal. O quadrante superior esquerdo — muito impacto, pouco esforço — é a fila de ataque. O esforço vem do degrau que falta na escala, não de chute.</p>
+            <div class="meta">Plano · dispersão em quadrantes</div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <rect x="10" y="14" width="17" height="52" rx="3" fill="#018A3C" fill-opacity=".25"/>
+              <rect x="31" y="24" width="17" height="10" rx="3" fill="#CB1615" fill-opacity=".8"/>
+              <rect x="52" y="34" width="17" height="8" rx="3" fill="#EEA10D" fill-opacity=".8"/>
+              <rect x="73" y="42" width="17" height="6" rx="3" fill="#F8D668"/>
+              <rect x="94" y="48" width="12" height="18" rx="3" fill="#018A3C"/>
+              <line x1="10" y1="14" x2="106" y2="14" stroke="#D9E0EA" stroke-width="1" stroke-dasharray="2 2"/>
+              <line x1="10" y1="66" x2="106" y2="66" stroke="#D9E0EA" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Cascata da nota</h3>
+            <p class="q">“Onde exatamente eu perco pontos?”</p>
+            <p>Sai de 100 e desce degrau a degrau até a nota real, atribuindo cada queda a um componente. Converte uma nota abstrata numa lista ordenada de causas — e o topo da lista já é a pauta da próxima reunião.</p>
+            <div class="meta">Plano · waterfall</div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <div class="viz">
+            <svg width="112" height="80" viewBox="0 0 112 80" aria-hidden="true">
+              <g stroke="#D9E0EA" stroke-width="1.4" fill="none">
+                <path d="M14 60 L34 44 L54 46 L74 30 L98 22"/>
+              </g>
+              <g stroke="#018A3C" stroke-width="2.4" fill="none">
+                <path d="M14 62 L34 58 L54 40 L74 34 L98 18"/>
+              </g>
+              <g fill="#018A3C"><circle cx="54" cy="40" r="3.2"/><circle cx="98" cy="18" r="3.6"/></g>
+              <circle cx="74" cy="34" r="4.6" fill="none" stroke="#D8E814" stroke-width="2.4"/>
+              <text x="70" y="52" font-family="IBM Plex Mono,monospace" font-size="7" fill="#8A93A1">ação</text>
+            </svg>
+          </div>
+          <div>
+            <h3>Trajetória entre safras</h3>
+            <p class="q">“O que mudou desde a última avaliação?”</p>
+            <p>Comparação entre safras reais do Painel, marcando os requisitos que subiram de degrau. É o que fecha o ciclo de controle — e o que prova que o encaminhamento gerou efeito.</p>
+            <div class="meta">Plano · exige 2ª safra oficial · <b>não usar CSV sintético</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="t">Regra de corte</div>
+        <p>Nenhum gráfico entra sem responder a uma pergunta acionável, e nenhum usa cor como único canal de significado — toda escala carrega também rótulo, posição ou valor. Isso não é preciosismo: é o que mantém o painel legível para daltônicos e em impressão em cinza, que é como um dossiê chega a uma reunião.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · MASCOTE -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">02 · O mascote</span>
+        <h2>Mundico — o mundinho que carrega os dados em órbita.</h2>
+      </div>
+      <p class="lead-in">O sistema de identidade proíbe o caminho fácil: <em>“não folclóricos ou genéricos”</em>. Nada de arara ou lobo-guará. Mundico é um planeta pequeno — o próprio assunto do projeto em forma de personagem — e traz <strong>as barras da marca como um anel de dados girando em volta dele</strong>. É desse anel que sai a expressão.</p>
+
+      <figure>
+        <svg viewBox="0 0 900 300" role="img" aria-label="Construção do mascote Mundico: uma esfera verde recebe o anel de barras da marca em órbita e dois olhos; as alturas das barras do anel expressam o estado do dado.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#BCC7D4"/>
+            </marker>
+            <clipPath id="g1"><circle cx="120" cy="128" r="46"/></clipPath>
+            <clipPath id="g3"><circle cx="600" cy="128" r="46"/></clipPath>
+          </defs>
+
+          <text x="62" y="34" font-family="IBM Plex Mono,monospace" font-size="11" fill="#8A93A1" letter-spacing="1">1 · O MUNDO</text>
+          <circle cx="120" cy="128" r="46" fill="#005222"/>
+          <g clip-path="url(#g1)" fill="#018A3C">
+            <path d="M78 108 q22 -14 40 -4 q16 9 6 20 q-14 14 -34 8 q-16 -6 -12 -24Z"/>
+            <path d="M112 150 q20 -6 32 6 q10 12 -6 20 q-20 8 -30 -6 q-8 -12 4 -20Z"/>
+          </g>
+          <text x="62" y="204" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">Esfera em verde 900,</text>
+          <text x="62" y="222" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">continentes em verde 500.</text>
+
+          <path d="M208,128 L254,128" stroke="#BCC7D4" stroke-width="2" marker-end="url(#ar)"/>
+
+          <text x="300" y="34" font-family="IBM Plex Mono,monospace" font-size="11" fill="#8A93A1" letter-spacing="1">2 · A ÓRBITA DE DADOS</text>
+          <ellipse cx="360" cy="128" rx="74" ry="21" transform="rotate(-14 360 128)" fill="none" stroke="#D9E0EA" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <g transform="rotate(-14 360 128)" fill="#018A3C"><rect x="426.9" y="126.5" width="7" height="16" rx="3.5"/><rect x="416.4" y="127.3" width="7" height="26" rx="3.5"/><rect x="400.0" y="135.0" width="7" height="20" rx="3.5"/><rect x="379.4" y="131.0" width="7" height="34" rx="3.5"/><rect x="356.5" y="137.0" width="7" height="24" rx="3.5"/><rect x="333.6" y="133.0" width="7" height="30" rx="3.5"/><rect x="313.0" y="136.0" width="7" height="18" rx="3.5"/><rect x="296.6" y="127.3" width="7" height="26" rx="3.5"/><rect x="286.1" y="127.5" width="7" height="14" rx="3.5"/></g>
+          <text x="300" y="204" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">As barras do símbolo Climaton,</text>
+          <text x="300" y="222" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">agora girando como anel.</text>
+
+          <path d="M452,128 L498,128" stroke="#BCC7D4" stroke-width="2" marker-end="url(#ar)"/>
+
+          <text x="540" y="34" font-family="IBM Plex Mono,monospace" font-size="11" fill="#005222" letter-spacing="1" font-weight="600">3 · MUNDICO</text>
+          <ellipse cx="600" cy="136" rx="64" ry="17" transform="rotate(-12 600 136)" fill="none" stroke="#017147" stroke-width="6" stroke-linecap="round" stroke-dasharray="6 11" opacity=".5"/>
+          <circle cx="600" cy="128" r="46" fill="#005222"/>
+          <g clip-path="url(#g3)" fill="#018A3C">
+            <path d="M558 108 q22 -14 40 -4 q16 9 6 20 q-14 14 -34 8 q-16 -6 -12 -24Z"/>
+            <path d="M592 150 q20 -6 32 6 q10 12 -6 20 q-20 8 -30 -6 q-8 -12 4 -20Z"/>
+          </g>
+          <circle cx="585" cy="120" r="7.5" fill="#D8E814"/>
+          <circle cx="617" cy="118" r="7.5" fill="#D8E814"/>
+          <g transform="rotate(-12 600 136)" fill="#D8E814"><rect x="656.3" y="136.9" width="6" height="11" rx="3.0"/><rect x="642.5" y="139.0" width="6" height="18" rx="3.0"/><rect x="621.7" y="139.2" width="6" height="25" rx="3.0"/><rect x="597.0" y="138.5" width="6" height="29" rx="3.0"/><rect x="572.3" y="140.2" width="6" height="23" rx="3.0"/><rect x="551.5" y="140.0" width="6" height="16" rx="3.0"/><rect x="537.7" y="137.4" width="6" height="10" rx="3.0"/></g>
+          <text x="540" y="204" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">Os olhos observam.</text>
+          <text x="540" y="222" font-family="Source Sans 3,sans-serif" font-size="13" fill="#5C6675">O anel é a voz — e o dado.</text>
+
+          <line x1="712" y1="70" x2="712" y2="248" stroke="#D9E0EA" stroke-width="1"/>
+          <text x="736" y="88" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="#8A93A1" letter-spacing=".8">ANATOMIA</text>
+          <text x="736" y="116" font-family="Source Sans 3,sans-serif" font-size="13" fill="#2C3340" font-weight="600">Esfera · verde 900</text>
+          <text x="736" y="134" font-family="Source Sans 3,sans-serif" font-size="12" fill="#5C6675">o território que se observa</text>
+          <text x="736" y="162" font-family="Source Sans 3,sans-serif" font-size="13" fill="#2C3340" font-weight="600">Anel · 7 barras lima</text>
+          <text x="736" y="180" font-family="Source Sans 3,sans-serif" font-size="12" fill="#5C6675">alturas = estado do dado</text>
+          <text x="736" y="208" font-family="Source Sans 3,sans-serif" font-size="13" fill="#2C3340" font-weight="600">Olhos · lima 400</text>
+          <text x="736" y="226" font-family="Source Sans 3,sans-serif" font-size="12" fill="#5C6675">contraste 9,42:1 sobre o verde</text>
+        </svg>
+        <figcaption><b>A ideia central.</b> Mundico não “tem” uma expressão desenhada — o anel dele <em>é</em> um gráfico de barras. Diante de uma lacuna crítica o anel sobe e fica vermelho; quando o ente melhora, ele se nivela em verde. O mascote e a visualização de dados passam a ser o mesmo objeto, o que impede o personagem de virar enfeite colado num produto de controle externo.</figcaption>
+      </figure>
+
+      <h3 style="margin-top:34px">Estados</h3>
+      <div class="states">
+        <div class="state">
+          <svg width="104" height="86" viewBox="0 0 104 86" aria-hidden="true">
+            <defs><clipPath id="ga"><circle cx="52" cy="38" r="27"/></clipPath></defs>
+            <circle cx="52" cy="38" r="27" fill="#005222"/>
+            <g clip-path="url(#ga)" fill="#018A3C"><path d="M28 26 q13 -8 24 -2 q9 5 3 12 q-8 8 -20 5 q-10 -4 -7 -15Z"/></g>
+            <circle cx="43" cy="33" r="4.4" fill="#D8E814"/><circle cx="62" cy="32" r="4.4" fill="#D8E814"/>
+            <g transform="rotate(-12 52 42)" fill="#D8E814"><rect x="80.8" y="42.9" width="3.6" height="5" rx="1.8"/><rect x="68.7" y="46.0" width="3.6" height="7" rx="1.8"/><rect x="50.2" y="46.5" width="3.6" height="9" rx="1.8"/><rect x="31.7" y="46.0" width="3.6" height="7" rx="1.8"/><rect x="19.6" y="42.9" width="3.6" height="5" rx="1.8"/></g>
+          </svg>
+          <div class="n">Em repouso</div>
+          <div class="d">Anel baixo e regular. Disponível, sem chamar atenção.</div>
+        </div>
+        <div class="state">
+          <svg width="104" height="86" viewBox="0 0 104 86" aria-hidden="true">
+            <defs><clipPath id="gb"><circle cx="52" cy="38" r="27"/></clipPath></defs>
+            <circle cx="52" cy="38" r="27" fill="#005222"/>
+            <g clip-path="url(#gb)" fill="#018A3C"><path d="M28 26 q13 -8 24 -2 q9 5 3 12 q-8 8 -20 5 q-10 -4 -7 -15Z"/></g>
+            <circle cx="43" cy="33" r="4.4" fill="#D8E814"/><circle cx="62" cy="32" r="4.4" fill="#D8E814"/>
+            <g transform="rotate(-12 52 42)" fill="#D8E814"><rect x="80.8" y="42.4" width="3.6" height="6" rx="1.8" opacity=".4"/><rect x="68.7" y="43.5" width="3.6" height="12" rx="1.8"/><rect x="50.2" y="47.5" width="3.6" height="7" rx="1.8" opacity=".4"/><rect x="31.7" y="47.0" width="3.6" height="5" rx="1.8" opacity=".4"/><rect x="19.6" y="43.4" width="3.6" height="4" rx="1.8" opacity=".4"/></g>
+          </svg>
+          <div class="n">Consultando</div>
+          <div class="d">Uma barra acesa percorre o anel enquanto busca o dado.</div>
+        </div>
+        <div class="state">
+          <svg width="104" height="86" viewBox="0 0 104 86" aria-hidden="true">
+            <defs><clipPath id="gc"><circle cx="52" cy="38" r="27"/></clipPath></defs>
+            <circle cx="52" cy="38" r="27" fill="#005222"/>
+            <g clip-path="url(#gc)" fill="#018A3C"><path d="M28 26 q13 -8 24 -2 q9 5 3 12 q-8 8 -20 5 q-10 -4 -7 -15Z"/></g>
+            <circle cx="43" cy="33" r="4.8" fill="#CB1615"/><circle cx="62" cy="32" r="4.8" fill="#CB1615"/>
+            <g transform="rotate(-12 52 42)" fill="#CB1615"><rect x="80.8" y="39.9" width="3.6" height="11" rx="1.8"/><rect x="68.7" y="42.0" width="3.6" height="15" rx="1.8"/><rect x="50.2" y="42.0" width="3.6" height="18" rx="1.8"/><rect x="31.7" y="42.5" width="3.6" height="14" rx="1.8"/><rect x="19.6" y="40.4" width="3.6" height="10" rx="1.8"/></g>
+          </svg>
+          <div class="n">Achado crítico</div>
+          <div class="d">Anel alto e vermelho. Só aparece para risco de vida (P2/P5).</div>
+        </div>
+        <div class="state">
+          <svg width="104" height="86" viewBox="0 0 104 86" aria-hidden="true">
+            <defs><clipPath id="gd"><circle cx="52" cy="38" r="27"/></clipPath></defs>
+            <circle cx="52" cy="38" r="27" fill="#005222"/>
+            <g clip-path="url(#gd)" fill="#018A3C"><path d="M28 26 q13 -8 24 -2 q9 5 3 12 q-8 8 -20 5 q-10 -4 -7 -15Z"/></g>
+            <path d="M39 34 q4 -5 8 0" stroke="#4CCA0F" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M58 33 q4 -5 8 0" stroke="#4CCA0F" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <g transform="rotate(-12 52 42)" fill="#4CCA0F"><rect x="80.8" y="41.4" width="3.6" height="8" rx="1.8"/><rect x="68.7" y="45.5" width="3.6" height="8" rx="1.8"/><rect x="50.2" y="47.0" width="3.6" height="8" rx="1.8"/><rect x="31.7" y="45.5" width="3.6" height="8" rx="1.8"/><rect x="19.6" y="41.4" width="3.6" height="8" rx="1.8"/></g>
+          </svg>
+          <div class="n">Concluído</div>
+          <div class="d">Anel nivelado em verde: peça emitida ou requisito resolvido.</div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <span class="tag">O nome</span>
+          <h3>Mundico</h3>
+          <p>Diminutivo de mundo — e apelido brasileiro de verdade, vindo de Raimundo. Caloroso sem ser folclórico, e diz literalmente o que a figura é.</p>
+        </div>
+        <div class="card">
+          <span class="tag a">Quando ele fala sozinho</span>
+          <h3>Só em achado crítico</h3>
+          <p>Mundico só interrompe quando o ente aberto tem lacuna em P2 ou P5. Fora disso, espera ser chamado. Assistente que fala demais é fechado no primeiro dia.</p>
+        </div>
+        <div class="card">
+          <span class="tag i">Acessibilidade</span>
+          <h3>Nunca só visual</h3>
+          <p>Toda fala tem texto; a órbita respeita <code>prefers-reduced-motion</code>; o estado do anel é anunciado por <code>aria-live</code> e nunca é o único indicador.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · CONVERSA -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">03 · Como ela conversa</span>
+        <h2>Responde com fonte, e termina em ação.</h2>
+      </div>
+      <p class="lead-in">Mundico nunca devolve só texto. Toda resposta traz a origem do dado e ao menos um próximo passo executável — porque o produto existe para produzir encaminhamento, não conversa.</p>
+
+      <div class="talk">
+        <div class="bubble u">
+          <div class="who">RG</div>
+          <div class="msg">Por que meu estado está mal em adaptação?</div>
+        </div>
+        <div class="bubble i">
+          <div class="who">M</div>
+          <div class="msg">
+            No Rio Grande do Sul, o requisito <strong>P2B — Estratégias de adaptação</strong> está como “Sem progresso”. A auditoria registrou que o ProClima2050 existe, mas <strong>sem indicadores de monitoramento, sem relatórios públicos de progresso e sem formalização legal</strong>.<br><br>
+            O estado está em 49 de maturidade em Políticas públicas, contra 43 do país — acima da média no eixo, mas com essa lacuna específica em aberto.
+            <div class="act"><span>Gerar ofício</span><span class="g">Ver quem resolveu</span><span class="g">Abrir parecer completo</span></div>
+            <div class="src">Painel ClimaBrasil · extração 2025-09-12 · item P2B</div>
+          </div>
+        </div>
+        <div class="bubble u">
+          <div class="who">RG</div>
+          <div class="msg">Quantas pessoas isso afeta no Brasil todo?</div>
+        </div>
+        <div class="bubble i">
+          <div class="who">M</div>
+          <div class="msg">
+            <strong>103,4 milhões</strong> de pessoas vivem em estados com ao menos uma lacuna em Estratégias de adaptação — são 20 dos 26 estados avaliados.<br><br>
+            É medida de lacuna de governança cruzada com população do IBGE, <strong>não</strong> de risco físico.
+            <div class="act"><span>Exportar lista dos 20</span><span class="g">Comparar com defesa civil</span></div>
+            <div class="src">Painel ClimaBrasil × IBGE, tabela 6579</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="t">A ressalva é parte da resposta</div>
+        <p>Repare na última linha: Mundico corrige a interpretação antes que ela vire erro. Diante de auditores, <strong>a ressalva metodológica não enfraquece o argumento — é ela que o torna citável.</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · LIMITES -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">04 · Limites inegociáveis</span>
+        <h2>O que Mundico nunca faz.</h2>
+      </div>
+      <p class="lead-in">A plateia é um tribunal de contas. Um assistente que inventa um número de política pública destrói a credibilidade do produto inteiro — e é exatamente o risco de quem apoia a recomendação em geração livre de texto.</p>
+
+      <div class="rules">
+        <div class="rule">
+          <div class="m">✕</div>
+          <div>
+            <h4>Nunca produz um número que não veio de uma consulta</h4>
+            <p>Se a função não devolveu o dado, Mundico diz que não sabe. Não estima, não arredonda de memória, não completa lacuna com plausibilidade.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="m">✕</div>
+          <div>
+            <h4>Nunca redige o documento oficial</h4>
+            <p>As peças saem do gerador determinístico, com protocolo e hash reproduzíveis. Mundico escolhe o modelo e preenche os parâmetros — o texto jurídico não passa pelo modelo de linguagem.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="m">✕</div>
+          <div>
+            <h4>Nunca envia nada sem confirmação explícita</h4>
+            <p>Disparar e-mail, protocolar ou publicar exige um segundo passo humano, com o destinatário e o conteúdo visíveis na tela.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="m">✕</div>
+          <div>
+            <h4>Nunca afirma causalidade</h4>
+            <p>Não diz que uma lacuna causou um desastre. Apresenta cronologia documentada e deixa a inferência com quem tem competência para fazê-la.</p>
+          </div>
+        </div>
+        <div class="rule ok">
+          <div class="m">✓</div>
+          <div>
+            <h4>Sempre cita a origem e a data da extração</h4>
+            <p>Toda afirmação carrega fonte, versão da avaliação e o código do requisito — o suficiente para qualquer pessoa reconferir sem depender de Mundico.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>MUNDICO · PLANEJAMENTO VISUAL · CLIMATON BRASIL 2026</span>
+    <span>O DADO FALA — COM FONTE</span>
+  </div>
+</footer>

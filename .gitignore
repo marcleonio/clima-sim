@@ -27,3 +27,6 @@ doc.txt
 # Cache/saída da ferramenta graphify (JSONs gerados automaticamente, não é código do projeto)
 .graphify/
 .graphifyignore
+
+# Saída de cobertura de testes (gerada por vitest --coverage)
+coverage

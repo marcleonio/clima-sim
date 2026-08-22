@@ -1,0 +1,546 @@
+<title>Achado Climático</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --bg:#F1F5F2;--surface:#FFFFFF;--surface-2:#E9F0EB;
+    --ink:#0D2125;--muted:#516665;--faint:#78908E;
+    --line:#D7E2DC;--line-strong:#C2D2CB;
+    --accent:#0B8F66;--accent-ink:#076B4C;--accent-soft:#E1F2E9;
+    --crit:#C0392B;--crit-soft:#F8E4E1;
+    --warn:#9A6B12;--warn-soft:#F6ECD6;
+    --ok:#0B8F66;--ok-soft:#E1F2E9;
+    --shadow:0 1px 2px rgba(13,33,37,.04),0 10px 28px -16px rgba(13,33,37,.2);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#091618;--surface:#0F2528;--surface-2:#153030;
+      --ink:#E9F1ED;--muted:#9EB2AF;--faint:#6D8482;
+      --line:#20403E;--line-strong:#2C534F;
+      --accent:#26C892;--accent-ink:#5FE0B4;--accent-soft:rgba(38,200,146,.13);
+      --crit:#F0764A;--crit-soft:rgba(240,118,74,.15);
+      --warn:#E0B15A;--warn-soft:rgba(224,177,90,.14);
+      --ok:#26C892;--ok-soft:rgba(38,200,146,.13);
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 36px -20px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#091618;--surface:#0F2528;--surface-2:#153030;
+    --ink:#E9F1ED;--muted:#9EB2AF;--faint:#6D8482;
+    --line:#20403E;--line-strong:#2C534F;
+    --accent:#26C892;--accent-ink:#5FE0B4;--accent-soft:rgba(38,200,146,.13);
+    --crit:#F0764A;--crit-soft:rgba(240,118,74,.15);
+    --warn:#E0B15A;--warn-soft:rgba(224,177,90,.14);
+    --ok:#26C892;--ok-soft:rgba(38,200,146,.13);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 36px -20px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Archivo",system-ui,sans-serif;font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  h1,h2,h3,h4{margin:0;text-wrap:balance}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  /* ---------- topo ---------- */
+  .top{position:sticky;top:0;z-index:40;background:var(--bg);
+    border-bottom:1px solid var(--line);padding:14px 0}
+  .topin{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;flex:none}
+  .glyph{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-weight:900;font-size:16px}
+  .bn{font-weight:800;font-size:1rem;letter-spacing:-.01em}
+  .bn small{display:block;font-weight:500;font-size:.68rem;color:var(--faint);
+    letter-spacing:.06em;text-transform:uppercase;font-family:"IBM Plex Mono",monospace}
+  .searchbox{flex:1;min-width:230px;position:relative}
+  .searchbox input{width:100%;padding:11px 14px 11px 38px;border-radius:10px;
+    border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);
+    font-family:inherit;font-size:.95rem}
+  .searchbox input::placeholder{color:var(--faint)}
+  .searchbox svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;color:var(--faint);pointer-events:none}
+  .results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);
+    border:1px solid var(--line-strong);border-radius:11px;box-shadow:var(--shadow);
+    max-height:340px;overflow-y:auto;display:none;z-index:50}
+  .results.on{display:block}
+  .ropt{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 14px;border:none;background:none;width:100%;text-align:left;
+    color:var(--ink);border-bottom:1px solid var(--line);font-size:.92rem}
+  .ropt:last-child{border-bottom:none}
+  .ropt:hover,.ropt:focus{background:var(--accent-soft)}
+  .ropt .t{font-weight:600}
+  .ropt .m{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--faint)}
+  .ropt .pill{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:5px}
+
+  /* ---------- estado vazio ---------- */
+  .empty{padding:70px 0 90px;text-align:center}
+  .empty h2{font-size:clamp(1.5rem,3.6vw,2.1rem);font-weight:900;letter-spacing:-.02em;margin-bottom:12px}
+  .empty p{color:var(--muted);max-width:52ch;margin:0 auto 26px;font-family:"Source Serif 4",serif;font-size:1.05rem}
+  .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .chip{padding:8px 15px;border-radius:99px;border:1px solid var(--line-strong);
+    background:var(--surface);color:var(--muted);font-size:.85rem;font-weight:600}
+  .chip:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+  /* ---------- dashboard ---------- */
+  #dash{display:none;padding:26px 0 70px}
+  #dash.on{display:block}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
+    flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .head h1{font-size:clamp(1.7rem,4.2vw,2.5rem);font-weight:900;letter-spacing:-.025em;line-height:1.05}
+  .head .sub{margin-top:7px;font-family:"IBM Plex Mono",monospace;font-size:.75rem;
+    color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+  .sev{padding:7px 14px;border-radius:9px;font-weight:800;font-size:.8rem;
+    letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+  .sev.c{background:var(--crit-soft);color:var(--crit)}
+  .sev.w{background:var(--warn-soft);color:var(--warn)}
+  .sev.o{background:var(--ok-soft);color:var(--accent-ink)}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:16px 17px;box-shadow:var(--shadow)}
+  .kpi .n{font-size:1.85rem;font-weight:900;letter-spacing:-.02em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .kpi .n.c{color:var(--crit)} .kpi .n.o{color:var(--ok)}
+  .kpi .l{margin-top:7px;font-size:.78rem;color:var(--muted);line-height:1.35}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:20px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+  .panel > h3{font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:16px}
+
+  .axis{display:grid;gap:13px}
+  .arow{display:grid;grid-template-columns:186px 1fr 64px;gap:14px;align-items:center}
+  .arow .nm{font-size:.9rem;font-weight:600}
+  .arow .bar{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+  .arow .bar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+  .arow .v{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:.85rem;font-weight:600}
+
+  /* ---------- achados ---------- */
+  .ach{border:1px solid var(--line);border-radius:11px;margin-bottom:9px;
+    background:var(--surface);overflow:hidden}
+  .ach.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .ahead{display:grid;grid-template-columns:auto auto 1fr auto;gap:13px;align-items:center;
+    padding:14px 16px;width:100%;border:none;background:none;text-align:left;color:var(--ink)}
+  .ahead:hover{background:var(--surface-2)}
+  .cb{width:17px;height:17px;border-radius:4px;border:1.8px solid var(--line-strong);
+    display:grid;place-items:center;flex:none;background:var(--surface)}
+  .ach.sel .cb{background:var(--accent);border-color:var(--accent);color:#fff}
+  .cb svg{width:11px;height:11px;opacity:0}
+  .ach.sel .cb svg{opacity:1}
+  .code{font-family:"IBM Plex Mono",monospace;font-size:.72rem;font-weight:600;
+    padding:3px 7px;border-radius:5px;background:var(--crit-soft);color:var(--crit);flex:none}
+  .atit{font-size:.94rem;font-weight:600;line-height:1.3}
+  .atit em{display:block;font-style:normal;font-size:.74rem;color:var(--faint);
+    font-family:"IBM Plex Mono",monospace;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .caret{width:15px;height:15px;color:var(--faint);transition:transform .2s}
+  .ach.open .caret{transform:rotate(180deg)}
+  .abody{display:none;padding:2px 16px 17px 57px;font-family:"Source Serif 4",serif;font-size:.92rem}
+  .ach.open .abody{display:block}
+  .lei{background:var(--crit-soft);border-radius:8px;padding:10px 13px;margin-bottom:11px;
+    font-family:"Archivo",sans-serif;font-size:.82rem;color:var(--ink)}
+  .lei b{display:block;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--crit);margin-bottom:3px}
+  .apar{color:var(--muted);line-height:1.6}
+  .apar b{color:var(--ink);display:block;font-family:"Archivo",sans-serif;font-size:.68rem;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+
+  /* ---------- encaminhamento ---------- */
+  .fwd{background:var(--surface);border:2px solid var(--accent);border-radius:14px;
+    padding:22px;box-shadow:var(--shadow);margin-top:20px}
+  .fwd h3{font-size:1.08rem;font-weight:800;margin-bottom:5px}
+  .fwd .d{font-size:.88rem;color:var(--muted);margin-bottom:17px}
+  .fwd .count{font-family:"IBM Plex Mono",monospace;font-size:.78rem;color:var(--accent-ink);
+    background:var(--accent-soft);padding:3px 9px;border-radius:5px;font-weight:600}
+  .tpls{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+  .tpl{text-align:left;border:1px solid var(--line-strong);border-radius:11px;padding:15px 16px;
+    background:var(--surface);color:var(--ink);transition:border-color .15s}
+  .tpl:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .tpl .who{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .tpl .nm{font-weight:700;font-size:.95rem;margin-bottom:4px}
+  .tpl .ds{font-size:.8rem;color:var(--muted);line-height:1.4}
+
+  /* ---------- documento ---------- */
+  .ovl{position:fixed;inset:0;background:rgba(8,20,22,.62);z-index:100;display:none;
+    overflow-y:auto;padding:26px 16px}
+  .ovl.on{display:block}
+  .doc{max-width:760px;margin:0 auto;background:#fff;color:#111;border-radius:10px;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.5)}
+  .docbar{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:13px 20px;border-bottom:1px solid #e2e2e2;position:sticky;top:0;background:#fff;
+    border-radius:10px 10px 0 0;flex-wrap:wrap}
+  .docbar .t{font-size:.76rem;font-family:"IBM Plex Mono",monospace;color:#666;
+    letter-spacing:.06em;text-transform:uppercase}
+  .btns{display:flex;gap:8px}
+  .btn{padding:8px 15px;border-radius:8px;font-size:.83rem;font-weight:700;border:1px solid #ccc;
+    background:#fff;color:#222}
+  .btn.p{background:#0B8F66;border-color:#0B8F66;color:#fff}
+  .btn:hover{opacity:.87}
+  .paper{padding:52px 58px 60px;font-family:"Source Serif 4",Georgia,serif;
+    font-size:14.2px;line-height:1.72;color:#111}
+  .paper .ttl{text-align:center;font-family:"Archivo",sans-serif;font-weight:800;
+    font-size:1.02rem;letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px;color:#111}
+  .paper .prot{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:.72rem;
+    color:#777;margin-bottom:30px}
+  .paper p{margin:0 0 13px}
+  .paper .fld{margin-bottom:15px}
+  .paper .fld b{font-family:"Archivo",sans-serif;font-size:.74rem;letter-spacing:.05em;
+    text-transform:uppercase;color:#666;display:block;margin-bottom:2px}
+  .paper .achbox{border-left:3px solid #C0392B;padding:11px 0 11px 15px;margin:15px 0}
+  .paper .achbox .h{font-family:"Archivo",sans-serif;font-weight:700;font-size:.92rem;margin-bottom:5px}
+  .paper .achbox .l{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:#B03A2E;margin-bottom:7px}
+  .paper .achbox .q{font-size:.9rem;color:#333;margin:0}
+  .paper .sig{margin-top:42px;padding-top:16px;border-top:1px solid #ddd;
+    font-family:"IBM Plex Mono",monospace;font-size:.7rem;color:#888;line-height:1.7}
+  .paper hr{border:none;border-top:1px solid #e5e5e5;margin:26px 0}
+  .paper ol{margin:0 0 13px;padding-left:22px}
+  .paper ol li{margin-bottom:7px}
+
+  @media (max-width:820px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .tpls{grid-template-columns:1fr}
+    .arow{grid-template-columns:130px 1fr 54px;gap:10px}
+    .paper{padding:34px 26px 40px}
+  }
+  @media print{
+    body{background:#fff}
+    .top,#dash,.docbar{display:none!important}
+    .ovl{position:static;background:none;padding:0;display:block}
+    .doc{box-shadow:none;max-width:none;border-radius:0}
+    .paper{padding:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="top">
+  <div class="wrap topin">
+    <div class="brand">
+      <div class="glyph">A</div>
+      <div class="bn">Achado Climático<small>Painel ClimaBrasil · TCU</small></div>
+    </div>
+    <div class="searchbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="text" placeholder="Buscar estado ou capital…" autocomplete="off" aria-label="Buscar ente federativo">
+      <div class="results" id="res" role="listbox"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="empty" id="empty">
+    <h2>Consulte a ação climática do seu estado ou capital</h2>
+    <p>Cada lacuna vem com o parecer técnico que a auditoria registrou e a norma que a sustenta — pronta para virar ofício, requerimento ou plano de providências.</p>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div id="dash">
+    <div class="head">
+      <div>
+        <h1 id="eNome"></h1>
+        <div class="sub" id="eSub"></div>
+      </div>
+      <div class="sev" id="eSev"></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="n" id="kTot"></div><div class="l">requisitos avaliados pela metodologia oficial</div></div>
+      <div class="kpi"><div class="n c" id="kLac"></div><div class="l">lacunas — requisitos sem qualquer ação demonstrada</div></div>
+      <div class="kpi"><div class="n" id="kPct"></div><div class="l">da avaliação sem progresso</div></div>
+      <div class="kpi"><div class="n" id="kRank"></div><div class="l">posição nacional em fragilidade (de 49 entes)</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Desempenho por eixo</h3>
+      <div class="axis" id="axis"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Achados — selecione o que deseja encaminhar</h3>
+      <div id="achados"></div>
+    </div>
+
+    <div class="fwd">
+      <h3>Encaminhar o processo <span class="count" id="cSel">0 selecionados</span></h3>
+      <div class="d">Escolha o destino. O documento sai preenchido com os achados marcados, a base normativa e a fonte de cada informação.</div>
+      <div class="tpls" id="tpls"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovl" role="dialog" aria-modal="true" aria-label="Documento gerado">
+  <div class="doc">
+    <div class="docbar">
+      <div class="t" id="docT"></div>
+      <div class="btns">
+        <button class="btn" id="bClose">Fechar</button>
+        <button class="btn p" id="bPrint">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+    <div class="paper" id="paper"></div>
+  </div>
+</div>
+
+<script id="DADOS" type="application/json">__DADOS__</script>
+<script>
+(function(){
+  "use strict";
+  const D = JSON.parse(document.getElementById("DADOS").textContent);
+  const ENTES = D.entes, META = D.meta;
+  const NOMES = Object.keys(ENTES).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  let atual = null, sel = new Set();
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const nfmt = n => n==null ? "—" : n.toLocaleString("pt-BR");
+  const pctOf = e => e.lac/e.tot*100;
+  const pf = (v,d=1) => v.toFixed(d).replace(".",",");
+
+  function sevOf(p){
+    if(p>=45) return {k:"c",t:"Crítico"};
+    if(p>=20) return {k:"w",t:"Atenção"};
+    return {k:"o",t:"Maduro"};
+  }
+  function corOf(p){ return p>=45?"var(--crit)":(p>=20?"var(--warn)":"var(--ok)"); }
+
+  // ---------- busca ----------
+  const q = $("q"), res = $("res");
+  function render(list){
+    if(!list.length){ res.classList.remove("on"); return; }
+    res.innerHTML = list.slice(0,40).map(n=>{
+      const e=ENTES[n], p=pctOf(e), s=sevOf(p);
+      return `<button class="ropt" data-n="${esc(n)}" role="option">
+        <span><span class="t">${esc(n)}</span> <span class="m">${esc(e.tipo)}</span></span>
+        <span class="pill" style="background:var(--${s.k==="c"?"crit":s.k==="w"?"warn":"ok"}-soft);color:${corOf(p)}">${p.toFixed(0)}%</span>
+      </button>`;
+    }).join("");
+    res.classList.add("on");
+  }
+  q.addEventListener("input", ()=>{
+    const v=q.value.trim().toLowerCase();
+    if(!v){ res.classList.remove("on"); return; }
+    render(NOMES.filter(n=>n.toLowerCase().includes(v)));
+  });
+  q.addEventListener("focus", ()=>{ if(q.value.trim()) render(NOMES.filter(n=>n.toLowerCase().includes(q.value.trim().toLowerCase()))); });
+  res.addEventListener("click", ev=>{
+    const b=ev.target.closest(".ropt"); if(b) abrir(b.dataset.n);
+  });
+  document.addEventListener("click", ev=>{
+    if(!ev.target.closest(".searchbox")) res.classList.remove("on");
+  });
+
+  // atalhos
+  $("chips").innerHTML = ["Boa Vista","Rio Grande do Sul","Roraima","São Paulo","Belém"]
+    .filter(n=>ENTES[n]).map(n=>`<button class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join("");
+  $("chips").addEventListener("click", ev=>{
+    const b=ev.target.closest(".chip"); if(b) abrir(b.dataset.n);
+  });
+
+  // ---------- dashboard ----------
+  function abrir(nome){
+    const e = ENTES[nome]; if(!e) return;
+    atual = nome; sel.clear();
+    res.classList.remove("on"); q.value = "";
+    $("empty").style.display="none"; $("dash").classList.add("on");
+
+    const p = pctOf(e), s = sevOf(p);
+    $("eNome").textContent = nome;
+    $("eSub").textContent = [e.tipo, e.pop?nfmt(e.pop)+" habitantes":null,
+      "avaliação "+META.snapshot].filter(Boolean).join(" · ");
+    const sv=$("eSev"); sv.className="sev "+s.k; sv.textContent=s.t;
+
+    $("kTot").textContent = e.tot;
+    $("kLac").textContent = e.lac;
+    $("kPct").textContent = pf(p)+"%";
+    $("kPct").className = "n"; $("kPct").style.color = corOf(p);
+    $("kRank").textContent = e.rank+"º";
+
+    $("axis").innerHTML = Object.entries(e.eixos).map(([nm,v])=>{
+      const pp = v.t? v.l/v.t*100 : 0;
+      return `<div class="arow">
+        <div class="nm">${esc(nm)}</div>
+        <div class="bar"><i style="width:${pp.toFixed(1)}%;background:${corOf(pp)}"></i></div>
+        <div class="v" style="color:${corOf(pp)}">${pp.toFixed(0)}%</div>
+      </div>`;
+    }).join("");
+
+    $("achados").innerHTML = e.achados.length ? e.achados.map((a,i)=>`
+      <div class="ach" data-i="${i}">
+        <button class="ahead" type="button">
+          <span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4"><path d="M4 12l6 6L20 6"/></svg></span>
+          <span class="code">${esc(a.c+a.i)}</span>
+          <span class="atit">${esc(a.nome)}<em>${esc(a.eixo)}</em></span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="abody">
+          ${a.lei?`<div class="lei"><b>Base normativa do requisito</b>${esc(a.lei)}</div>`:""}
+          <div class="apar"><b>O que a auditoria apurou</b>${esc(a.txt)}</div>
+        </div>
+      </div>`).join("")
+      : `<p style="color:var(--muted);font-family:'Source Serif 4',serif">Nenhum requisito com "Sem progresso" — este ente não apresenta lacunas nesta safra de avaliação.</p>`;
+
+    atualizarSel();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  $("achados").addEventListener("click", ev=>{
+    const head = ev.target.closest(".ahead"); if(!head) return;
+    const card = head.parentElement, i = +card.dataset.i;
+    if(ev.target.closest(".cb")){
+      if(sel.has(i)){ sel.delete(i); card.classList.remove("sel"); }
+      else { sel.add(i); card.classList.add("sel"); }
+      atualizarSel();
+    } else {
+      card.classList.toggle("open");
+    }
+  });
+
+  function atualizarSel(){
+    const n = sel.size;
+    $("cSel").textContent = n===0 ? "nenhum selecionado — usa todos"
+      : n===1 ? "1 achado selecionado" : n+" achados selecionados";
+  }
+
+  // ---------- modelos de encaminhamento ----------
+  const TPLS = [
+    {id:"oficio", who:"Tribunal de Contas → Gestor", nm:"Ofício de requisição de informações",
+     ds:"Solicita esclarecimento formal sobre os achados, com prazo de resposta."},
+    {id:"lai", who:"Cidadão · Imprensa → Órgão", nm:"Requerimento de acesso à informação",
+     ds:"Pedido com base na Lei 12.527/2011, pronto para protocolar."},
+    {id:"plano", who:"Gestor → Tribunal de Contas", nm:"Plano de providências",
+     ds:"Estrutura a resposta do gestor: causa, ação, responsável e prazo."},
+    {id:"legis", who:"Vereador · Deputado", nm:"Requerimento legislativo",
+     ds:"Leva o achado ao plenário como pedido formal de informação."},
+  ];
+  $("tpls").innerHTML = TPLS.map(t=>`
+    <button class="tpl" data-id="${t.id}">
+      <div class="who">${t.who}</div>
+      <div class="nm">${t.nm}</div>
+      <div class="ds">${t.ds}</div>
+    </button>`).join("");
+  $("tpls").addEventListener("click", ev=>{
+    const b=ev.target.closest(".tpl"); if(b) gerar(b.dataset.id);
+  });
+
+  // hash determinístico simples (djb2) — mesmo insumo, mesmo protocolo
+  function hash(str){
+    let h=5381;
+    for(let i=0;i<str.length;i++) h=((h<<5)+h+str.charCodeAt(i))>>>0;
+    return h.toString(16).padStart(8,"0");
+  }
+
+  function gerar(tipo){
+    const e = ENTES[atual];
+    const itens = sel.size ? [...sel].sort((a,b)=>a-b).map(i=>e.achados[i]) : e.achados;
+    if(!itens.length){ alert("Este ente não possui achados para encaminhar."); return; }
+
+    const semente = atual+"|"+tipo+"|"+itens.map(a=>a.c+a.i).join(",")+"|"+META.snapshot;
+    const sha = hash(semente);
+    const num = (parseInt(sha.slice(0,4),16)%9000+1000)+"/2026";
+    const hoje = new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+    const p = pctOf(e);
+
+    const blocos = itens.map(a=>`
+      <div class="achbox">
+        <div class="h">${esc(a.c+a.i)} — ${esc(a.nome)}</div>
+        ${a.lei?`<div class="l">Base normativa: ${esc(a.lei)}</div>`:""}
+        <p class="q">${esc(a.txt)}</p>
+      </div>`).join("");
+
+    const ctx = `${esc(atual)} (${esc(e.tipo)})`;
+    const fonte = `Painel ClimaBrasil — Tribunal de Contas da União, ${esc(META.versao)}, extração de ${esc(META.snapshot)}. Metodologia ClimateScanner/INTOSAI. População: IBGE.`;
+
+    let ttl, corpo;
+
+    if(tipo==="oficio"){
+      ttl = "Ofício de requisição de informações";
+      corpo = `
+        <div class="fld"><b>Ao</b>Chefe do Poder Executivo de ${ctx}</div>
+        <div class="fld"><b>Assunto</b>Requisição de informações sobre lacunas identificadas na avaliação de ação climática</div>
+        <hr>
+        <p>Senhor(a) Gestor(a),</p>
+        <p>No exercício da competência de controle externo, e considerando os resultados da avaliação de ação climática consolidada no Painel ClimaBrasil, requisita-se manifestação formal quanto aos requisitos abaixo, nos quais não foi demonstrada ação (classificação <b>“Sem progresso”</b>).</p>
+        <p>O ente apresenta <b>${e.lac} de ${e.tot} requisitos sem progresso (${pf(p)}%)</b>, ocupando a <b>${e.rank}ª posição</b> em fragilidade entre os 49 entes avaliados no país.</p>
+        ${blocos}
+        <p>Diante do exposto, solicita-se que sejam informados, no prazo de <b>15 (quinze) dias</b>:</p>
+        <ol>
+          <li>as providências adotadas ou planejadas para cada requisito acima;</li>
+          <li>o cronograma de implementação, com marcos verificáveis;</li>
+          <li>a unidade administrativa e o servidor responsáveis por cada ação;</li>
+          <li>a dotação orçamentária vinculada, se houver.</li>
+        </ol>
+        <p>Atenciosamente,</p>`;
+    } else if(tipo==="lai"){
+      ttl = "Requerimento de acesso à informação";
+      corpo = `
+        <div class="fld"><b>Ao</b>Serviço de Informação ao Cidadão (SIC) — ${ctx}</div>
+        <div class="fld"><b>Fundamento</b>Lei nº 12.527/2011 (Lei de Acesso à Informação), arts. 10 e 11</div>
+        <hr>
+        <p>Com base na Lei de Acesso à Informação, solicito informações sobre os requisitos de ação climática abaixo, nos quais a avaliação técnica consolidada no Painel ClimaBrasil registrou ausência de ação demonstrada.</p>
+        ${blocos}
+        <p>Especificamente, requeiro:</p>
+        <ol>
+          <li>cópia dos atos normativos, planos ou programas relacionados a cada requisito, se existentes;</li>
+          <li>informação sobre a existência de dotação orçamentária destinada ao tema;</li>
+          <li>o nome do setor responsável pela matéria neste ente;</li>
+          <li>caso não existam as ações, a justificativa formal para a ausência.</li>
+        </ol>
+        <p>Solicito resposta no prazo legal de <b>20 (vinte) dias</b>, prorrogável por mais 10, nos termos do art. 11, §1º e §2º da Lei 12.527/2011.</p>`;
+    } else if(tipo==="plano"){
+      ttl = "Plano de providências";
+      corpo = `
+        <div class="fld"><b>Ente</b>${ctx}${e.pop?" — população estimada: "+nfmt(e.pop)+" habitantes":""}</div>
+        <div class="fld"><b>Objeto</b>Resposta às lacunas identificadas na avaliação de ação climática</div>
+        <hr>
+        <p>Este plano estrutura a resposta do ente aos requisitos em que a avaliação não identificou ação demonstrada. Para cada achado, preencher causa, ação corretiva, responsável e prazo.</p>
+        ${itens.map(a=>`
+          <div class="achbox">
+            <div class="h">${esc(a.c+a.i)} — ${esc(a.nome)}</div>
+            ${a.lei?`<div class="l">Base normativa: ${esc(a.lei)}</div>`:""}
+            <p class="q">${esc(a.txt)}</p>
+            <p class="q" style="margin-top:9px;color:#666">
+              Causa identificada: _______________________________________________<br>
+              Ação corretiva: __________________________________________________<br>
+              Responsável: _____________________  Prazo: ____/____/______
+            </p>
+          </div>`).join("")}
+        <p>Declaro que as informações prestadas são verídicas e que as ações descritas contam com respaldo orçamentário e institucional.</p>`;
+    } else {
+      ttl = "Requerimento de informação";
+      corpo = `
+        <div class="fld"><b>À Mesa Diretora</b>Requerimento de informação ao Poder Executivo</div>
+        <div class="fld"><b>Ente</b>${ctx}</div>
+        <hr>
+        <p>Requeiro, na forma regimental, que seja oficiado ao Poder Executivo solicitando informações sobre as lacunas de ação climática identificadas na avaliação consolidada no Painel ClimaBrasil, do Tribunal de Contas da União.</p>
+        <p><b>Justificativa.</b> A avaliação técnica registrou <b>${e.lac} requisitos sem qualquer ação demonstrada</b> neste ente, o equivalente a <b>${pf(p)}%</b> do total avaliado${e.pop?`, em jurisdição com população estimada de <b>${nfmt(e.pop)} habitantes</b>`:""}. Requisitos de defesa civil e adaptação climática apoiam-se em obrigações legais, entre elas a Lei nº 12.608/2012, que institui a Política Nacional de Proteção e Defesa Civil.</p>
+        ${blocos}
+        <p>Diante da relevância da matéria para a proteção da população, requer-se manifestação do Executivo sobre as providências em curso.</p>`;
+    }
+
+    $("docT").textContent = "Protocolo "+num+" · sha "+sha;
+    $("paper").innerHTML = `
+      <div class="ttl">${esc(ttl)}</div>
+      <div class="prot">Protocolo ${num} · sha ${sha} · ${hoje}</div>
+      ${corpo}
+      <div class="sig">
+        Documento gerado a partir de dados públicos oficiais.<br>
+        Fonte: ${fonte}<br>
+        Conferência: mesmo conjunto de achados e mesma extração reproduzem este protocolo e este hash.
+      </div>`;
+    $("ovl").classList.add("on");
+    document.body.style.overflow="hidden";
+  }
+
+  $("bClose").addEventListener("click", fechar);
+  $("bPrint").addEventListener("click", ()=>window.print());
+  $("ovl").addEventListener("click", ev=>{ if(ev.target===$("ovl")) fechar(); });
+  document.addEventListener("keydown", ev=>{ if(ev.key==="Escape" && $("ovl").classList.contains("on")) fechar(); });
+  function fechar(){ $("ovl").classList.remove("on"); document.body.style.overflow=""; }
+})();
+</script>

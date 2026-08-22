@@ -4,8 +4,8 @@ import { useState } from "react";
 
 const NAV = [
   { to: "/", label: "Início" },
+  { to: "/achados", label: "Achados" },
   { to: "/simulador", label: "Simulador" },
-  { to: "/simulador", label: "Importar dados", search: { tab: "evolucao" } },
   { to: "/metodologia", label: "Metodologia" },
   { to: "/impacto", label: "Impacto" },
 ] as const;
@@ -22,7 +22,7 @@ export function SiteHeader() {
           </span>
           <span className="min-w-0">
             <span className="block truncate font-display text-lg leading-none">ClimaSim</span>
-            <span className="block truncate text-[11px] uppercase tracking-widest text-muted-foreground">
+            <span className="block truncate text-xs uppercase tracking-widest text-muted-foreground">
               Climate Simulator
             </span>
           </span>
@@ -33,7 +33,6 @@ export function SiteHeader() {
             <Link
               key={item.label}
               to={item.to}
-              {...("search" in item ? { search: item.search } : {})}
               activeOptions={{ exact: item.to === "/" }}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}
               inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
@@ -61,7 +60,6 @@ export function SiteHeader() {
             <Link
               key={item.label}
               to={item.to}
-              {...("search" in item ? { search: item.search } : {})}
               activeOptions={{ exact: item.to === "/" }}
               onClick={() => setAberto(false)}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}

@@ -1,0 +1,618 @@
+<title>Da Nota ao Achado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --bg:#F1F5F2;--surface:#FFFFFF;--surface-2:#E9F0EB;
+    --ink:#0D2125;--muted:#516665;--faint:#78908E;
+    --line:#D7E2DC;--line-strong:#C2D2CB;
+    --accent:#0B8F66;--accent-ink:#076B4C;--accent-soft:#E1F2E9;
+    --crit:#C0392B;--crit-soft:#F8E4E1;
+    --warn:#9A6B12;--warn-soft:#F6ECD6;
+    --shadow:0 1px 2px rgba(13,33,37,.04),0 12px 34px -18px rgba(13,33,37,.22);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#091618;--surface:#0F2528;--surface-2:#153030;
+      --ink:#E9F1ED;--muted:#9EB2AF;--faint:#6D8482;
+      --line:#20403E;--line-strong:#2C534F;
+      --accent:#26C892;--accent-ink:#5FE0B4;--accent-soft:rgba(38,200,146,.13);
+      --crit:#F0764A;--crit-soft:rgba(240,118,74,.15);
+      --warn:#E0B15A;--warn-soft:rgba(224,177,90,.14);
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 18px 40px -22px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#091618;--surface:#0F2528;--surface-2:#153030;
+    --ink:#E9F1ED;--muted:#9EB2AF;--faint:#6D8482;
+    --line:#20403E;--line-strong:#2C534F;
+    --accent:#26C892;--accent-ink:#5FE0B4;--accent-soft:rgba(38,200,146,.13);
+    --crit:#F0764A;--crit-soft:rgba(240,118,74,.15);
+    --warn:#E0B15A;--warn-soft:rgba(224,177,90,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 18px 40px -22px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif;font-size:17.5px;line-height:1.62;
+    -webkit-font-smoothing:antialiased;font-optical-sizing:auto}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  .narrow{max-width:70ch}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-ink)}
+  .kicker{font-family:"Archivo",system-ui,sans-serif;font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--faint)}
+  h1,h2,h3,h4{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
+  h1{font-weight:900;font-size:clamp(2rem,5.2vw,3rem);line-height:1.03;letter-spacing:-.02em}
+  h2{font-weight:800;font-size:clamp(1.35rem,3.2vw,1.85rem);line-height:1.1;letter-spacing:-.015em}
+  h3{font-weight:700;font-size:1.06rem;line-height:1.25}
+  p{margin:0 0 1rem}
+  a{color:var(--accent-ink)}
+  strong{font-weight:600;color:var(--ink)}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+
+  header.hero{padding:60px 0 32px;border-bottom:1px solid var(--line);
+    background:radial-gradient(120% 90% at 88% -20%,var(--accent-soft),transparent 62%)}
+  .brandline{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+  .glyph{width:32px;height:32px;border-radius:8px;flex:none;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:"Archivo";font-weight:900;font-size:17px}
+  .brandname{font-family:"Archivo";font-weight:800;font-size:1rem}
+  .brandname span{color:var(--faint);font-weight:500}
+  .hero h1{margin:14px 0 0}
+  .lede{font-size:clamp(1.05rem,2.1vw,1.2rem);color:var(--muted);max-width:62ch;margin-top:18px}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  .sec-head{margin-bottom:24px}
+  .sec-head .kicker{display:block;margin-bottom:11px}
+  .lead-in{font-size:1.08rem;color:var(--muted);max-width:66ch}
+
+  figure{margin:26px 0 0;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:26px 22px 18px;box-shadow:var(--shadow);overflow-x:auto}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto;min-width:680px}
+  figcaption{margin-top:18px;font-size:.9rem;color:var(--muted);text-align:left;
+    border-top:1px solid var(--line);padding-top:14px;line-height:1.5}
+  figcaption b{color:var(--ink);font-family:"Archivo";font-weight:600}
+
+  /* etapas */
+  .steps{display:grid;gap:12px;margin-top:22px;counter-reset:s}
+  .step{display:grid;grid-template-columns:52px 1fr;gap:18px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+  .step .n{font-family:"Archivo";font-weight:900;font-size:1.5rem;color:var(--accent);
+    line-height:1;padding-top:2px;font-variant-numeric:tabular-nums}
+  .step h3{margin-bottom:4px}
+  .step p{margin:0;font-size:.95rem;color:var(--muted)}
+  .step .who{display:inline-block;margin-top:9px;font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);
+    background:var(--accent-soft);padding:3px 9px;border-radius:5px}
+
+  /* atores */
+  .actors{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:20px}
+  .actor{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:18px;box-shadow:var(--shadow);border-top:3px solid var(--accent)}
+  .actor.b{border-top-color:var(--warn)} .actor.c{border-top-color:var(--crit)}
+  .actor h3{font-size:.98rem;margin-bottom:6px}
+  .actor p{margin:0;font-size:.88rem;color:var(--muted)}
+  .actor .g{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:10px;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+
+  /* dados / provas */
+  .ev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+  .ev{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:17px 15px;box-shadow:var(--shadow)}
+  .ev .n{font-family:"Archivo";font-weight:900;font-size:1.55rem;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+  .ev .n.r{color:var(--crit)} .ev .n.g{color:var(--accent)}
+  .ev .l{margin-top:8px;font-size:.83rem;color:var(--muted);line-height:1.4}
+  .ev .s{margin-top:8px;font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--faint)}
+
+  /* noticias */
+  .news{display:grid;gap:11px;margin-top:20px}
+  .item{display:grid;grid-template-columns:112px 1fr;gap:18px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:16px 19px;box-shadow:var(--shadow)}
+  .item .d{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--accent-ink);padding-top:3px}
+  .item .d b{display:block;font-family:"Archivo";font-size:1rem;color:var(--ink);letter-spacing:0;text-transform:none;margin-bottom:2px}
+  .item h3{font-size:1rem;margin-bottom:5px}
+  .item p{margin:0;font-size:.92rem;color:var(--muted)}
+  .item .src{margin-top:7px;font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+
+  /* alinhamento edital */
+  .tbl-wrap{overflow-x:auto;margin-top:20px;border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:660px;background:var(--surface)}
+  th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:"Archivo";font-weight:700;font-size:.78rem;letter-spacing:.03em;text-transform:uppercase;color:var(--faint);background:var(--surface-2)}
+  td{font-size:.91rem;color:var(--muted)}
+  td b{color:var(--ink);font-family:"Archivo";font-weight:600;font-size:.95rem}
+  tr:last-child td{border-bottom:none}
+
+  .callout{margin-top:24px;background:var(--surface);border:1px solid var(--line);
+    border-left:4px solid var(--crit);border-radius:12px;padding:20px 22px;box-shadow:var(--shadow)}
+  .callout .t{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--crit);margin-bottom:8px}
+  .callout p{margin:0;font-size:.98rem}
+  .callout.ok{border-left-color:var(--accent)}
+  .callout.ok .t{color:var(--accent-ink)}
+
+  footer{padding:26px 0 60px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    color:var(--faint);font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.03em}
+
+  @media (max-width:860px){
+    .ev-grid,.actors{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:620px){
+    .item{grid-template-columns:1fr;gap:8px}
+    .step{grid-template-columns:36px 1fr;gap:14px}
+  }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brandline">
+      <div class="glyph">A</div>
+      <div class="brandname">Achado Climático <span>· arquitetura da solução</span></div>
+    </div>
+    <div class="eyebrow">Climaton Brasil 2026 · documento de engenharia e produto</div>
+    <h1>A evidência já existe. Falta entregá-la em formato de cobrança.</h1>
+    <p class="lede">Dentro do CSV do Painel ClimaBrasil há <strong>2.245 pareceres técnicos</strong> escritos por tribunais de contas — um para cada requisito avaliado, inclusive para as 640 lacunas. O painel publica só a nota. Este documento descreve a máquina que transforma esse acervo em dossiês auditáveis.</p>
+  </div>
+</header>
+
+<main>
+  <!-- 01 · FLUXO PRINCIPAL -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">01 · Arquitetura</span>
+        <h2>O caminho do dado até a mesa de reunião.</h2>
+      </div>
+      <p class="lead-in">O sistema não prevê nada e não pontua ninguém: ele <strong>reorganiza evidência que já foi produzida por auditoria</strong>, cruza com dado fiscal e demográfico oficial, e emite um documento rastreável. O ciclo se fecha quando a resposta do gestor volta para a próxima avaliação.</p>
+
+      <figure>
+        <svg viewBox="0 0 1020 600" role="img" aria-label="Fluxo da solução: quatro fontes de dados alimentam um motor de quatro estágios que emite um dossiê em PDF, o qual movimenta cidadão, imprensa e auditor até a resposta do gestor, que retorna como insumo da próxima avaliação do painel.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="arv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#0B8F66"/>
+            </marker>
+          </defs>
+
+          <!-- ================= COLUNA 1 : FONTES ================= -->
+          <text x="24" y="26" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">FONTES DE DADOS</text>
+
+          <!-- fonte primaria destacada -->
+          <rect x="24" y="42" width="200" height="72" rx="9" fill="none" stroke="#0B8F66" stroke-width="2"/>
+          <text x="38" y="66" font-family="Archivo,sans-serif" font-size="13" font-weight="700" fill="#0B8F66">Painel ClimaBrasil</text>
+          <text x="38" y="84" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".75">pcb-raw-data.csv · TCU</text>
+          <text x="38" y="101" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".75">2.245 pareceres técnicos</text>
+
+          <rect x="24" y="128" width="200" height="54" rx="9" fill="none" stroke="#0B8F66" stroke-width="1.6"/>
+          <text x="38" y="150" font-family="Archivo,sans-serif" font-size="12.5" font-weight="600" fill="#0B8F66">Metodologia oficial</text>
+          <text x="38" y="168" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".75">15 componentes + base legal</text>
+
+          <rect x="24" y="196" width="200" height="54" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".5"/>
+          <text x="38" y="218" font-family="Archivo,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">SICONFI · IBGE</text>
+          <text x="38" y="236" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".7">receita · população</text>
+
+          <!-- fonte extensivel, tracejada -->
+          <rect x="24" y="264" width="200" height="60" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" opacity=".55"/>
+          <text x="38" y="286" font-family="Archivo,sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Fonte do usuário</text>
+          <text x="38" y="303" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".7">CSV do próprio TCE,</text>
+          <text x="38" y="317" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".7">nova safra de avaliação</text>
+
+          <!-- setas fontes -> motor -->
+          <path d="M224,78 L288,78 L288,150" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55" marker-end="url(#ar)"/>
+          <path d="M224,155 L288,155" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55" marker-end="url(#ar)"/>
+          <path d="M224,223 L288,223 L288,175" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55" marker-end="url(#ar)"/>
+          <path d="M224,294 L288,294 L288,185" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" opacity=".55" marker-end="url(#ar)"/>
+          <text x="238" y="72" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">ingere</text>
+
+          <!-- ================= COLUNA 2 : MOTOR ================= -->
+          <text x="310" y="26" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">MOTOR DE EVIDÊNCIA</text>
+
+          <rect x="310" y="42" width="330" height="282" rx="11" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".28"/>
+
+          <rect x="328" y="62" width="294" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+          <text x="342" y="83" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">1 · Normalizar e versionar</text>
+          <text x="342" y="101" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">congela o snapshot: versão + data + hash</text>
+
+          <rect x="328" y="126" width="294" height="52" rx="8" fill="none" stroke="#C0392B" stroke-width="1.6"/>
+          <text x="342" y="147" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="#C0392B">2 · Detectar lacuna</text>
+          <text x="342" y="165" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">isola "Sem progresso" + o parecer do auditor</text>
+
+          <rect x="328" y="190" width="294" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+          <text x="342" y="211" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">3 · Cruzar com dado oficial</text>
+          <text x="342" y="229" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">receita por habitante · população exposta</text>
+
+          <rect x="328" y="254" width="294" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+          <text x="342" y="275" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">4 · Priorizar e formular</text>
+          <text x="342" y="293" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">ordena por exposição e redige a pergunta</text>
+
+          <path d="M475,114 L475,126" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".5" marker-end="url(#ar)"/>
+          <path d="M475,178 L475,190" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".5" marker-end="url(#ar)"/>
+          <path d="M475,242 L475,254" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".5" marker-end="url(#ar)"/>
+
+          <!-- motor -> dossie -->
+          <path d="M640,183 L712,183" fill="none" stroke="#0B8F66" stroke-width="2" marker-end="url(#arv)"/>
+          <text x="648" y="176" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="#0B8F66">emite</text>
+
+          <!-- ================= COLUNA 3 : DOSSIE ================= -->
+          <text x="712" y="26" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">SAÍDA</text>
+
+          <rect x="712" y="42" width="284" height="282" rx="11" fill="none" stroke="#0B8F66" stroke-width="2"/>
+          <text x="730" y="70" font-family="Archivo,sans-serif" font-size="14" font-weight="800" fill="#0B8F66">Dossiê de Evidência</text>
+          <text x="730" y="88" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">PDF · determinístico · citável</text>
+
+          <line x1="730" y1="100" x2="978" y2="100" stroke="currentColor" stroke-width="1" opacity=".22"/>
+
+          <text x="730" y="120" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">1 · Identificação do ente</text>
+          <text x="730" y="140" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">2 · Requisito e o que se exigia</text>
+          <text x="730" y="160" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="#C0392B" font-weight="600">3 · Base normativa violada</text>
+          <text x="730" y="180" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">4 · O que a auditoria apurou</text>
+          <text x="730" y="200" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">5 · Comparação com pares</text>
+          <text x="730" y="220" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">6 · Receita e população exposta</text>
+          <text x="730" y="240" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".85">7 · A pergunta ao gestor</text>
+
+          <line x1="730" y1="256" x2="978" y2="256" stroke="currentColor" stroke-width="1" opacity=".22"/>
+          <text x="730" y="276" font-family="IBM Plex Mono,monospace" font-size="10" fill="#0B8F66" font-weight="600">protocolo 0427/2026 · sha 8f39a1c4</text>
+          <text x="730" y="298" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">mesmo insumo → mesmo documento</text>
+
+          <!-- ================= CADEIA DE ACAO ================= -->
+          <text x="24" y="382" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">O QUE O DOCUMENTO MOVIMENTA</text>
+
+          <path d="M854,324 L854,404" fill="none" stroke="#0B8F66" stroke-width="2" marker-end="url(#arv)"/>
+
+          <rect x="700" y="404" width="296" height="58" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".65"/>
+          <text x="716" y="426" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">Cidadão · Imprensa · OSC</text>
+          <text x="716" y="445" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">leva à audiência, à pauta, à ouvidoria</text>
+
+          <rect x="376" y="404" width="286" height="58" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".65"/>
+          <text x="392" y="426" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">Tribunal de Contas</text>
+          <text x="392" y="445" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">converte em achado e fiscalização</text>
+
+          <rect x="52" y="404" width="286" height="58" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".65"/>
+          <text x="68" y="426" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">Gestor público</text>
+          <text x="68" y="445" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".7">responde, corrige ou justifica</text>
+
+          <path d="M700,433 L666,433" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#ar)"/>
+          <text x="681" y="396" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">provoca</text>
+          <path d="M376,433 L342,433" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6" marker-end="url(#ar)"/>
+          <text x="359" y="396" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">cobra</text>
+
+          <!-- loop de realimentacao -->
+          <path d="M195,462 L195,512 L560,512 L560,532" fill="none" stroke="#0B8F66" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#arv)"/>
+          <rect x="392" y="536" width="336" height="46" rx="9" fill="none" stroke="#0B8F66" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <text x="410" y="556" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="#0B8F66">Próxima safra de avaliação</text>
+          <text x="410" y="573" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".72">a correção vira nota melhor no ciclo seguinte</text>
+          <text x="210" y="505" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="#0B8F66">a resposta do gestor realimenta o painel</text>
+        </svg>
+        <figcaption><b>O mecanismo.</b> Quatro fontes entram; o motor isola a lacuna <em>junto com o parecer que a justifica</em>, cruza com receita e população, e emite um PDF determinístico com protocolo e hash. O ciclo se fecha na seta tracejada: quando o gestor corrige, a próxima avaliação registra a melhora — é assim que a ferramenta induz valor público em vez de apenas denunciar.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 02 · INGESTÃO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">02 · Ingestão de dados</span>
+        <h2>Uma fonte obrigatória, três opcionais, e a porta aberta.</h2>
+      </div>
+      <p class="lead-in">O edital exige uso do Painel ClimaBrasil — ele é a espinha. As demais fontes entram como <strong>enriquecimento não-bloqueante</strong>: se a API cair, o dossiê sai mesmo assim, apenas sem aquela linha. Isso já é o comportamento do backend hoje.</p>
+
+      <figure>
+        <svg viewBox="0 0 1000 300" role="img" aria-label="Contrato de ingestão: a fonte primária é obrigatória e bloqueante; SICONFI, IBGE e fontes do usuário são opcionais e nunca impedem a emissão do dossiê.">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <text x="20" y="24" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">CAMINHO OBRIGATÓRIO</text>
+          <rect x="20" y="38" width="212" height="62" rx="9" fill="none" stroke="#0B8F66" stroke-width="2"/>
+          <text x="36" y="62" font-family="Archivo,sans-serif" font-size="13" font-weight="700" fill="#0B8F66">CSV do Painel</text>
+          <text x="36" y="81" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".72">14 colunas · 2.385 linhas</text>
+
+          <path d="M232,69 L306,69" fill="none" stroke="#0B8F66" stroke-width="2" marker-end="url(#ar2)" color="#0B8F66"/>
+          <rect x="306" y="38" width="196" height="62" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".7"/>
+          <text x="322" y="62" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">Validação</text>
+          <text x="322" y="81" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".72">schema · escala · versão</text>
+
+          <path d="M502,69 L576,69" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7" marker-end="url(#ar2)"/>
+          <rect x="576" y="38" width="196" height="62" rx="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".7"/>
+          <text x="592" y="62" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="currentColor">Snapshot imutável</text>
+          <text x="592" y="81" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".72">versão + data + hash</text>
+
+          <path d="M772,69 L846,69" fill="none" stroke="#0B8F66" stroke-width="2" marker-end="url(#ar2)" color="#0B8F66"/>
+          <rect x="846" y="38" width="134" height="62" rx="9" fill="none" stroke="#0B8F66" stroke-width="2"/>
+          <text x="862" y="62" font-family="Archivo,sans-serif" font-size="12.5" font-weight="700" fill="#0B8F66">Dossiê</text>
+          <text x="862" y="81" font-family="IBM Plex Mono,monospace" font-size="10" fill="currentColor" opacity=".72">sempre emitido</text>
+
+          <line x1="20" y1="132" x2="980" y2="132" stroke="currentColor" stroke-width="1" opacity=".2"/>
+
+          <text x="20" y="164" font-family="Archivo,sans-serif" font-size="12" font-weight="700" fill="currentColor" opacity=".55" letter-spacing="1.2">ENRIQUECIMENTO OPCIONAL — NUNCA BLOQUEIA</text>
+
+          <rect x="20" y="180" width="212" height="54" rx="9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".6"/>
+          <text x="36" y="202" font-family="Archivo,sans-serif" font-size="12" font-weight="600" fill="currentColor">SICONFI</text>
+          <text x="36" y="220" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">timeout 10s → segue sem</text>
+
+          <rect x="252" y="180" width="212" height="54" rx="9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".6"/>
+          <text x="268" y="202" font-family="Archivo,sans-serif" font-size="12" font-weight="600" fill="currentColor">IBGE</text>
+          <text x="268" y="220" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">cache local de fallback</text>
+
+          <rect x="484" y="180" width="212" height="54" rx="9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".6"/>
+          <text x="500" y="202" font-family="Archivo,sans-serif" font-size="12" font-weight="600" fill="currentColor">CSV do usuário</text>
+          <text x="500" y="220" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".7">mesmo schema · upload</text>
+
+          <rect x="716" y="180" width="264" height="54" rx="9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".45"/>
+          <text x="732" y="202" font-family="Archivo,sans-serif" font-size="12" font-weight="600" fill="currentColor" opacity=".8">AdaptaBrasil · SEEG</text>
+          <text x="732" y="220" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="currentColor" opacity=".6">extensão futura · mesmo contrato</text>
+
+          <path d="M126,180 L126,110" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".55" marker-end="url(#ar2)"/>
+          <path d="M358,180 L358,110" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".55" marker-end="url(#ar2)"/>
+          <path d="M590,180 L590,110" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".55" marker-end="url(#ar2)"/>
+          <path d="M848,180 L848,110" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" opacity=".4" marker-end="url(#ar2)"/>
+
+          <text x="20" y="268" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".7">Linha cheia = obrigatória e bloqueante.   Linha tracejada = opcional; a falha remove a linha do dossiê, não o dossiê.</text>
+          <text x="20" y="288" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="currentColor" opacity=".7">Qualquer fonte nova entra pelo mesmo contrato: identificador do ente + valor + fonte citável.</text>
+        </svg>
+        <figcaption><b>Por que isso importa para a banca.</b> O contrato de robustez já existe no código (<span class="mono">DadosPublicosService</span> tem timeout de 10s e nunca lança exceção para o chamador). A demo não quebra se o wi-fi do evento oscilar — e a extensibilidade responde à pergunta "e se eu quiser usar o dado do meu TCE?".</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 02b · BASE NORMATIVA -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">02b · O salto de qualidade</span>
+        <h2>Não é "faltou boa prática". É "faltou contra a lei".</h2>
+      </div>
+      <p class="lead-in">A metodologia oficial do Painel — publicada em <span class="mono">climatescanner.org</span> — documenta, para cada um dos 15 componentes, <strong>a base normativa que o sustenta</strong> e a evidência que era exigida. Isso muda a natureza do dossiê: ele deixa de apontar uma lacuna de gestão e passa a apontar uma <strong>lacuna de conformidade</strong>.</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Componente</th><th>Base normativa (metodologia oficial)</th><th>Lacuna</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>P5 · Defesa civil e risco de desastre</b></td>
+              <td><strong>Lei 12.608/2012</strong> — Política Nacional de Proteção e Defesa Civil · Marco de Sendai (ONU) · Acordo de Paris, art. 8</td>
+              <td><b style="color:var(--crit)">35,8%</b></td>
+            </tr>
+            <tr>
+              <td><b>P2 · Estratégias de adaptação</b></td>
+              <td>Acordo de Paris · Lei de Acesso à Informação (12.527/2011) · Referencial de Governança do TCU</td>
+              <td><b style="color:var(--crit)">47,7%</b></td>
+            </tr>
+            <tr>
+              <td><b>F3 · Mobilização de investimentos privados</b></td>
+              <td>Lei 12.187/2009 — Política Nacional sobre Mudança do Clima · Lei Complementar 140/2011 · Lei das PPP (11.079/2004)</td>
+              <td><b style="color:var(--crit)">56,0%</b></td>
+            </tr>
+            <tr>
+              <td><b>F1 · Finanças e gastos públicos</b></td>
+              <td>Lei 14.133/2021 — Licitações e Contratos · Lei de Acesso à Informação · Nota de orientação do PNUD</td>
+              <td><b style="color:var(--warn)">39,7%</b></td>
+            </tr>
+            <tr>
+              <td><b>P4 · Políticas públicas e adaptação</b></td>
+              <td>Lei 12.187/2009 · <strong>Lei 14.904/2024</strong> — diretrizes para planos de adaptação · 2ª NDC do Brasil</td>
+              <td><b style="color:var(--warn)">21,7%</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ok">
+        <div class="t">Por que isso vence</div>
+        <p>Um dossiê que diz <em>"seu estado não tem plano de adaptação"</em> é uma opinião. Um dossiê que diz <em>"seu estado não demonstrou ação no requisito P5, que se apoia na Lei 12.608/2012 e no Marco de Sendai — e a auditoria registrou o seguinte…"</em> é uma <strong>peça de controle</strong>. A diferença entre as duas frases é a diferença entre um panfleto e um processo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · ETAPAS -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">03 · Como se usa</span>
+        <h2>Seis etapas, do clique à cobrança.</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <div>
+            <h3>Escolher o ente</h3>
+            <p>Qualquer um dos 49 estados e capitais avaliados. Sem cadastro, sem login — a barreira de entrada é zero para quem só quer olhar o próprio estado.</p>
+            <span class="who">Cidadão · Jornalista · Auditor</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <div>
+            <h3>Ver as lacunas ordenadas por gravidade</h3>
+            <p>O sistema lista os requisitos "Sem progresso" priorizando os que afetam mais gente — adaptação e Defesa Civil no topo, porque são os que separam um evento extremo de uma tragédia.</p>
+            <span class="who">Leitura em 30 segundos</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <div>
+            <h3>Ler o parecer técnico por trás da nota</h3>
+            <p>Cada lacuna abre o texto do auditor — em média 812 caracteres com citação de programa do PPA, lei e portal. É aqui que o produto entrega o que o painel público não entrega.</p>
+            <span class="who">Diferencial central</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">4</div>
+          <div>
+            <h3>Gerar o dossiê</h3>
+            <p>Um clique produz o PDF com identificação do ente, achados, comparação com pares, receita por habitante, fonte de cada número e a pergunta formulada ao gestor.</p>
+            <span class="who">O produto</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">5</div>
+          <div>
+            <h3>Levar à mesa</h3>
+            <p>Audiência pública, ouvidoria, pauta de jornal, representação ao tribunal de contas. O documento tem protocolo e hash, então pode ser citado e reconferido meses depois.</p>
+            <span class="who">Onde o valor público acontece</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">6</div>
+          <div>
+            <h3>Acompanhar a resposta</h3>
+            <p>Quando a próxima safra de avaliação sai, o mesmo requisito é reconferido. A melhora — ou a ausência dela — fica documentada. O ciclo de controle se fecha.</p>
+            <span class="who">Induz a administração</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · QUEM É AFETADO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">04 · Quem é afetado</span>
+        <h2>Quatro públicos, um documento.</h2>
+      </div>
+      <div class="actors">
+        <div class="actor">
+          <h3>Cidadão exposto</h3>
+          <p>Vive num ente com lacuna de adaptação ou Defesa Civil. Ganha linguagem e prova para cobrar sem depender de intermediário técnico.</p>
+          <div class="g">103,4 mi em estados sem plena adaptação</div>
+        </div>
+        <div class="actor b">
+          <h3>Imprensa e OSC</h3>
+          <p>Recebem pauta pronta e verificável: um achado com parecer oficial, comparação entre entes e fonte rastreável de cada número.</p>
+          <div class="g">49 entes cobertos</div>
+        </div>
+        <div class="actor c">
+          <h3>Tribunais de contas</h3>
+          <p>TCU e TCEs recebem de volta, priorizado por exposição populacional, o acervo que eles próprios produziram — pronto para virar fiscalização.</p>
+          <div class="g">640 lacunas mapeadas</div>
+        </div>
+        <div class="actor">
+          <h3>Gestor público</h3>
+          <p>Enxerga exatamente qual requisito falta, o que o avaliador esperava encontrar e quanto custa continuar sem. Recebe rota, não só crítica.</p>
+          <div class="g">Da denúncia à correção</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · A PROVA -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">05 · A tese, em fatos</span>
+        <h2>Por que prevenção — e por que agora.</h2>
+      </div>
+
+      <p class="lead-in" style="margin-bottom:6px">O que está em jogo, medido por quem mede.</p>
+      <div class="ev-grid">
+        <div class="ev"><div class="n r">184</div><div class="l">mortes confirmadas nas enchentes do RS de 2024, mais 25 desaparecidos.</div><div class="s">Defesa Civil RS</div></div>
+        <div class="ev"><div class="n r">R$ 88,9 bi</div><div class="l">de impacto econômico do desastre gaúcho.</div><div class="s">BID · CEPAL · Banco Mundial</div></div>
+        <div class="ev"><div class="n r">4.774</div><div class="l">mortes por desastres ligados à água no Brasil entre 1991 e 2024.</div><div class="s">MCTI</div></div>
+        <div class="ev"><div class="n r">129,8 mi</div><div class="l">de brasileiros atingidos por esses desastres em três décadas.</div><div class="s">MCTI</div></div>
+        <div class="ev"><div class="n g">6 : 1</div><div class="l">o retorno de investir em infraestrutura resiliente ao clima.</div><div class="s">ONU</div></div>
+        <div class="ev"><div class="n g">−30%</div><div class="l">de dano com apenas 24 horas de aviso antecipado.</div><div class="s">UNDRR · ESCAP</div></div>
+        <div class="ev"><div class="n g">6×</div><div class="l">menos mortes por desastre onde há sistema de alerta eficaz.</div><div class="s">UNDRR</div></div>
+        <div class="ev"><div class="n r">3%</div><div class="l">do orçamento de gestão de risco foi para prevenção na última década.</div><div class="s">Greenpeace Brasil</div></div>
+      </div>
+
+      <div class="callout ok" style="margin-top:26px">
+        <div class="t">A conta que fecha o argumento</div>
+        <p>O Brasil acumulou <strong>R$ 740 bilhões</strong> em prejuízos com desastres hídricos em três décadas, enquanto destinou <strong>3%</strong> do orçamento de risco à prevenção. Com razão de retorno de 6:1, cada real não investido em prevenção é uma dívida de seis com a reconstrução. <strong>Não é um argumento ambiental — é um argumento fiscal.</strong> E é exatamente por isso que ele pertence a um Tribunal de Contas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · NOTÍCIAS -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">06 · A cronologia que sustenta o caso</span>
+        <h2>O Rio Grande do Sul, em ordem.</h2>
+      </div>
+      <p class="lead-in">Este é o caso-âncora do pitch. Ele funciona porque é <strong>cronologia documentada</strong>, não inferência causal — e é assim que deve ser contado diante de auditores.</p>
+
+      <div class="news">
+        <div class="item">
+          <div class="d"><b>Mai 2024</b>o evento</div>
+          <div>
+            <h3>A maior catástrofe climática da história do estado</h3>
+            <p>184 mortes confirmadas, 25 desaparecidos, mais de 700 mil pessoas atingidas em suas residências, 581.638 desalojadas e 81.170 desabrigadas.</p>
+            <div class="src">Defesa Civil do RS · balanço de 24/04/2025</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="d"><b>2024</b>a conta</div>
+          <div>
+            <h3>R$ 88,9 bilhões de impacto econômico</h3>
+            <p>Avaliação conjunta de BID, CEPAL e Banco Mundial sobre o efeito das enchentes na economia gaúcha.</p>
+            <div class="src">BID · CEPAL · Grupo Banco Mundial</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="d"><b>Set 2025</b>a avaliação</div>
+          <div>
+            <h3>Dezesseis meses depois, a lacuna de governança permanece</h3>
+            <p>A avaliação técnica registra que a estratégia de adaptação do estado (ProClima2050) segue <strong>sem indicadores de monitoramento, sem relatórios públicos de progresso e sem formalização legal</strong> por decreto ou lei. O item é classificado como "Sem progresso".</p>
+            <div class="src">Painel ClimaBrasil · RS · componente P2B</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="d"><b>Ago 2026</b>o alerta</div>
+          <div>
+            <h3>Recursos liberados à Defesa Civil diante do El Niño — com moradias de 2024 ainda inacabadas</h3>
+            <p>O ciclo da reatividade se repete: o estado libera verba emergencial para o próximo evento antes de concluir a reconstrução do anterior.</p>
+            <div class="src">Brasil de Fato · 03/08/2026</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="t">Linha vermelha — não cruzar</div>
+        <p>Nunca afirmar que <em>"o RS não tinha plano de adaptação"</em> nem que <em>"o dado previu a enchente"</em>. Ambas são falsas: o estado tem o ProClima2050, e a avaliação é posterior ao desastre. A frase correta e devastadora é: <strong>"dezesseis meses depois da tragédia, a estratégia ainda não tinha indicadores de monitoramento nem força de lei — segundo o próprio tribunal de contas."</strong> Essa versão é imbatível justamente porque é exata.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · ALINHAMENTO -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">07 · Alinhamento com o edital e com o papel do TCU</span>
+        <h2>Cada exigência, atendida por uma parte do fluxo.</h2>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>O que é exigido</th><th>Onde o fluxo responde</th></tr></thead>
+          <tbody>
+            <tr><td><b>Uso obrigatório dos dados do Painel</b><br>desclassifica quem não usa</td><td>O CSV do Painel é a fonte primária e bloqueante — sem ele não há dossiê. É a espinha do produto, não um enfeite.</td></tr>
+            <tr><td><b>Solução prática, não conceitual</b><br>desclassifica quem só teoriza</td><td>Etapas 1 a 4 rodam ao vivo e produzem um arquivo que a banca pode segurar na mão.</td></tr>
+            <tr><td><b>Ajudar a sociedade a cobrar</b><br>1ª pergunta norteadora</td><td>Etapas 3 e 5: o parecer técnico vira linguagem de cobrança com fonte rastreável.</td></tr>
+            <tr><td><b>Avaliar e acompanhar políticas</b><br>2ª pergunta norteadora</td><td>Etapa 6 e o laço de realimentação: o mesmo requisito é reconferido na safra seguinte.</td></tr>
+            <tr><td><b>Impacto — 30% da nota</b></td><td>Exposição populacional calculada (103,4 mi) somada à economia da prevenção (6:1).</td></tr>
+            <tr><td><b>Controle externo</b><br>missão institucional do TCU</td><td>O produto devolve ao sistema de controle, priorizado e acionável, o acervo que ele mesmo produziu.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ok">
+        <div class="t">A frase de uma linha</div>
+        <p>“O Painel ClimaBrasil publica a nota. Nós publicamos <strong>o achado</strong> — com o parecer do auditor, a fonte de cada número e a pergunta que o gestor vai ter que responder.”</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ACHADO CLIMÁTICO · CLIMATON BRASIL 2026</span>
+    <span>DA NOTA AO ACHADO</span>
+  </div>
+</footer>
