@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { BalaoAgente } from "@/components/agente/balao";
 import { degrauDeficit } from "@/components/achado/componente-heatmap";
+import { BarraFiltros } from "@/components/painel/barra-filtros";
 import { LegendaMapa, MapaBrasil } from "@/components/painel/mapa-brasil";
+import { PainelEnte } from "@/components/painel/painel-ente";
 import { LegendaCriterios, ListaAcao } from "@/components/painel/lista-acao";
-import { Button } from "@/components/ui/button";
 import { formatarNumero, formatarPercentual, type MapaReferencias } from "@/lib/achados";
 import { insightsDoRecorte } from "@/lib/agente/insights";
 import { ENTES, META } from "@/lib/dados";
@@ -157,106 +157,102 @@ function PainelPage() {
     busca.tipo || busca.regiao || busca.eixo || busca.comp || busca.ente,
   );
 
+  /** Filtros aplicados, para a barra mostrar e permitir remover um a um. */
+  const ativos = [
+    ...(busca.tipo ? [{ texto: busca.tipo, onRemover: () => aplicar({ tipo: undefined }) }] : []),
+    ...(busca.regiao ? [{ texto: busca.regiao, onRemover: () => aplicar({ regiao: undefined }) }] : []),
+    ...(busca.eixo ? [{ texto: busca.eixo, onRemover: () => aplicar({ eixo: undefined }) }] : []),
+    ...(busca.comp
+      ? [
+          {
+            texto: `${busca.comp} — ${META.componentes[busca.comp] ?? busca.comp}`,
+            onRemover: () => aplicar({ comp: undefined }),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
-      <header className="mb-6">
-        <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+    <div className="mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6">
+      <header className="py-5">
+        <h1 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
           Onde começar
         </h1>
-        <p className="mt-3 max-w-prose text-pretty text-muted-foreground">
+        <p className="mt-1.5 max-w-prose text-pretty text-sm text-muted-foreground">
           “Quem está pior” e “por onde começar” são perguntas diferentes. Esta tela responde a
-          segunda: {META.total} entes avaliados, cruzados por território, eixo e componente, e
-          ordenados por um índice que se decompõe critério a critério.
+          segunda: {META.total} entes cruzados por território, eixo e componente, ordenados por um
+          índice que se decompõe critério a critério.
         </p>
       </header>
 
-      {/* ---------------- faixa 1: controles ---------------- */}
-      <section
-        aria-label="Filtros"
-        className="mb-6 rounded-xl border bg-card p-3 shadow-sm sm:p-4"
-      >
-        <div className="flex flex-wrap items-end gap-3">
-          <Campo rotulo="Tipo de ente">
-            <Seletor
-              valor={tipo}
-              opcoes={TIPOS.map((t) => ({ valor: t, texto: t === "todos" ? "Todos" : t }))}
-              onMudar={(v) => aplicar({ tipo: v as TipoEnte | "todos", ente: undefined })}
-            />
-          </Campo>
+      {/* ---------------- faixa 1: controles, uma linha ---------------- */}
+      <BarraFiltros
+        grupos={[
+          {
+            rotulo: "Tipo",
+            valor: tipo,
+            opcoes: [
+              { valor: "todos", texto: "Todos" },
+              { valor: "Estado", texto: "Estados", curto: "UF" },
+              { valor: "Município", texto: "Capitais", curto: "Cap." },
+            ],
+            onMudar: (v) => aplicar({ tipo: v as TipoEnte | "todos", ente: undefined }),
+          },
+          {
+            rotulo: "Priorizar",
+            valor: perfil,
+            opcoes: PERFIS_IPA.map((x) => ({ valor: x, texto: PESOS[x].nome })),
+            onMudar: (v) => aplicar({ perfil: v as PerfilPriorizacao }),
+          },
+        ]}
+        caixas={[
+          {
+            rotulo: "Região",
+            valor: regiao,
+            opcoes: [
+              { valor: "todas", texto: "Todas as regiões" },
+              ...REGIOES.map((r) => ({ valor: r, texto: r })),
+            ],
+            onMudar: (v) => aplicar({ regiao: v as Regiao | "todas", ente: undefined }),
+          },
+          {
+            rotulo: "Eixo",
+            valor: eixo ?? "",
+            opcoes: [{ valor: "", texto: "Todos os eixos" }, ...EIXOS.map((e) => ({ valor: e, texto: e }))],
+            onMudar: (v) => aplicar({ eixo: v || undefined }),
+          },
+          {
+            rotulo: "Componente",
+            valor: comp ?? "",
+            opcoes: [
+              { valor: "", texto: "Todos os componentes" },
+              ...Object.entries(META.componentes).map(([c, nome]) => ({
+                valor: c,
+                texto: `${c} — ${nome}`,
+              })),
+            ],
+            onMudar: (v) => aplicar({ comp: v || undefined }),
+          },
+        ]}
+        ativos={ativos}
+        onLimpar={() =>
+          void navegar({ search: { perfil }, resetScroll: false, replace: true })
+        }
+        nota={PESOS[perfil].pergunta}
+      />
 
-          <Campo rotulo="Região">
-            <Seletor
-              valor={regiao}
-              opcoes={[
-                { valor: "todas", texto: "Todas" },
-                ...REGIOES.map((r) => ({ valor: r, texto: r })),
-              ]}
-              onMudar={(v) => aplicar({ regiao: v as Regiao | "todas", ente: undefined })}
-            />
-          </Campo>
-
-          <Campo rotulo="Eixo">
-            <Seletor
-              valor={eixo ?? ""}
-              opcoes={[
-                { valor: "", texto: "Todos" },
-                ...EIXOS.map((e) => ({ valor: e, texto: e })),
-              ]}
-              onMudar={(v) => aplicar({ eixo: v || undefined })}
-            />
-          </Campo>
-
-          <Campo rotulo="Componente">
-            <Seletor
-              valor={comp ?? ""}
-              opcoes={[
-                { valor: "", texto: "Todos" },
-                ...Object.entries(META.componentes).map(([c, nome]) => ({
-                  valor: c,
-                  texto: `${c} — ${nome}`,
-                })),
-              ]}
-              onMudar={(v) => aplicar({ comp: v || undefined })}
-            />
-          </Campo>
-
-          <Campo rotulo="Priorizar para">
-            <Seletor
-              valor={perfil}
-              opcoes={PERFIS_IPA.map((p) => ({ valor: p, texto: PESOS[p].nome }))}
-              onMudar={(v) => aplicar({ perfil: v as PerfilPriorizacao })}
-            />
-          </Campo>
-
-          {temFiltro && (
-            <Button
-              variant="ghost"
-              className="h-11"
-              onClick={() => void navegar({ search: { perfil }, resetScroll: false, replace: true })}
-            >
-              <RotateCcw className="mr-1.5 size-3.5" aria-hidden />
-              Limpar
-            </Button>
-          )}
-        </div>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          {PESOS[perfil].pergunta}
-        </p>
-      </section>
-
-      {/* ---------------- faixa 2: mapa + números ---------------- */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-        <section aria-labelledby="mapa" className="rounded-xl border bg-card p-4 shadow-sm">
-          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 id="mapa" className="text-base font-bold">
-                {resumo.entes} {resumo.entes === 1 ? "ente" : "entes"} no recorte
-              </h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Toque num estado ou numa capital para abrir o resumo.
-              </p>
-            </div>
+      {/* ---------------- faixa 2: mapa + resultado, uma dobra ---------------- */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <section
+          aria-labelledby="mapa"
+          className="flex min-h-[26rem] flex-col rounded-xl border bg-card p-4 shadow-sm lg:h-[calc(100vh-16rem)]"
+        >
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="mapa" className="text-base font-bold">
+              {resumo.entes} {resumo.entes === 1 ? "ente" : "entes"} no recorte
+            </h2>
+            {/* a legenda sobe para o cabeçalho — antes ficava a 1.266px do topo */}
+            <LegendaMapa />
           </div>
 
           <MapaBrasil
@@ -265,89 +261,51 @@ function PainelPage() {
             onSelecionar={(nome) => aplicar({ ente: nome ?? undefined })}
             mostrarCapitais={tipo !== "Estado"}
           />
-
-          <div className="mt-3 border-t pt-3">
-            <LegendaMapa />
-          </div>
-
-          {ente && ENTES[ente] && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-accent/40 p-3">
-              <p className="text-sm">
-                <strong className="font-semibold">{ente}</strong>{" "}
-                <span className="text-muted-foreground">
-                  · {ENTES[ente].lac} de {ENTES[ente].tot} sem progresso ·{" "}
-                  {formatarPercentual(ENTES[ente].mat)} de maturidade
-                </span>
-              </p>
-              <Button asChild size="sm" className="h-11">
-                <Link to="/achados" search={{ ente, ...(comp ? { comp } : {}) }}>
-                  Abrir dossiê
-                  <ArrowRight className="ml-1.5 size-3.5" aria-hidden />
-                </Link>
-              </Button>
-            </div>
-          )}
         </section>
 
-        <aside className="space-y-4">
+        <div className="grid min-h-0 gap-4 lg:h-[calc(100vh-16rem)] lg:grid-rows-[minmax(0,1fr)_auto]">
+          {/* o resultado do clique nasce AQUI, ao lado do mapa */}
+          <PainelEnte
+            nome={ente ?? null}
+            ente={ente ? ENTES[ente] : undefined}
+            componente={comp ?? null}
+            nomesComponentes={META.componentes}
+            mediaNacional={META.nacional.mat}
+          />
+
           <section
             aria-label="Números do recorte"
             className="rounded-xl border bg-card p-4 shadow-sm"
           >
-            <dl className="space-y-3">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Numero
-                rotulo="Requisitos sem progresso"
-                valor={`${formatarNumero(resumo.lacunas)}`}
-                nota={`de ${formatarNumero(resumo.requisitos)} avaliados`}
+                rotulo="Sem progresso"
+                valor={formatarNumero(resumo.lacunas)}
+                nota={`de ${formatarNumero(resumo.requisitos)}`}
                 tom="critico"
               />
               <Numero
                 rotulo="Maturidade média"
                 valor={formatarPercentual(resumo.maturidade)}
-                nota={`média nacional ${formatarPercentual(META.nacional.mat)}`}
+                nota={`país ${formatarPercentual(META.nacional.mat)}`}
               />
               <Numero
-                rotulo="Entes sem nenhuma lacuna"
+                rotulo="Sem nenhuma lacuna"
                 valor={String(resumo.semLacuna)}
-                nota={`de ${resumo.entes} no recorte`}
+                nota={`de ${resumo.entes}`}
                 tom="ok"
               />
               <Numero
-                rotulo="População sob jurisdição"
+                rotulo="Sob jurisdição"
                 valor={formatarNumero(resumo.populacao)}
-                nota="estados e DF, que particionam o território"
+                nota="estados e DF"
               />
             </dl>
           </section>
-
-          <section
-            aria-label="Alerta de defesa civil e adaptação"
-            className="rounded-xl border-2 border-[var(--sev-critico)]/40 bg-[var(--sev-critico-bg)] p-4"
-          >
-            <p className="text-sm font-bold text-[var(--sev-critico)]">Requisitos que protegem vidas</p>
-            <dl className="mt-2 space-y-2 text-sm">
-              <div>
-                <dt className="text-muted-foreground">
-                  Sob jurisdição com lacuna em adaptação (P2)
-                </dt>
-                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP2)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">
-                  Sob jurisdição com lacuna em defesa civil (P5)
-                </dt>
-                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP5)}</dd>
-              </div>
-            </dl>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Mede lacuna de governança, não risco físico: a formulação é “vive sob jurisdição de
-              ente com lacuna no requisito”, nunca “está em risco”.
-            </p>
-          </section>
-        </aside>
+        </div>
       </div>
 
-      {/* ---------------- faixa 3: detalhe ---------------- */}
+      {/* ---------------- faixa 3: exploração, abaixo da dobra ---------------- */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <section aria-labelledby="lista-acao">
           <div className="mb-3">
@@ -365,50 +323,71 @@ function PainelPage() {
           <ListaAcao prioridades={prioridades} perfilLegivel={descreverPesos(PESOS[perfil].pesos)} />
         </section>
 
-        <section
-          aria-labelledby="barras-componentes"
-          className="rounded-xl border bg-card p-4 shadow-sm"
-        >
-          <h2 id="barras-componentes" className="text-base font-bold">
-            Lacunas por componente
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">No recorte atual.</p>
+        <div className="space-y-4">
+          <section
+            aria-label="Requisitos que protegem vidas"
+            className="rounded-xl border-2 border-[var(--sev-critico)]/40 bg-[var(--sev-critico-bg)] p-4"
+          >
+            <p className="text-sm font-bold text-[var(--sev-critico)]">
+              Requisitos que protegem vidas
+            </p>
+            <dl className="mt-2 space-y-2 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Sob jurisdição com lacuna em adaptação (P2)</dt>
+                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP2)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Sob jurisdição com lacuna em defesa civil (P5)</dt>
+                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP5)}</dd>
+              </div>
+            </dl>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Mede lacuna de governança, não risco físico: a formulação é “vive sob jurisdição de
+              ente com lacuna no requisito”, nunca “está em risco”.
+            </p>
+          </section>
 
-          <ul className="mt-3 space-y-1.5">
-            {barras.map((b) => (
-              <li key={b.c}>
-                <button
-                  type="button"
-                  onClick={() => aplicar({ comp: comp === b.c ? undefined : b.c })}
-                  aria-pressed={comp === b.c}
-                  className={cn(
-                    "grid w-full grid-cols-[2rem_1fr_2.5rem] items-center gap-2 rounded-md py-1.5 text-left",
-                    "min-h-11 hover:bg-accent/50",
-                    comp === b.c && "bg-accent",
-                  )}
-                >
-                  <span className="font-mono text-xs font-bold text-muted-foreground">{b.c}</span>
-                  <span className="h-4 rounded-r-[4px] bg-muted">
-                    <span
-                      className="block h-full rounded-r-[4px]"
-                      style={{
-                        width: `${maiorBarra ? (b.lacunas / maiorBarra) * 100 : 0}%`,
-                        background: `var(--calor-${degrauDeficit(
-                          b.total ? 100 - (100 * b.lacunas) / b.total : 100,
-                        )})`,
-                      }}
-                    />
-                  </span>
-                  <span className="text-right text-sm font-semibold tabular-nums">{b.lacunas}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <section
+            aria-labelledby="barras-componentes"
+            className="rounded-xl border bg-card p-4 shadow-sm"
+          >
+            <h2 id="barras-componentes" className="text-base font-bold">
+              Lacunas por componente
+            </h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">Toque para filtrar o painel.</p>
 
-          <p className="mt-3 border-t pt-2 text-xs text-muted-foreground">
-            Toque num componente para filtrar o mapa e a lista por ele.
-          </p>
-        </section>
+            <ul className="mt-3 space-y-1">
+              {barras.map((b) => (
+                <li key={b.c}>
+                  <button
+                    type="button"
+                    onClick={() => aplicar({ comp: comp === b.c ? undefined : b.c })}
+                    aria-pressed={comp === b.c}
+                    className={cn(
+                      "grid w-full grid-cols-[2rem_1fr_2.5rem] items-center gap-2 rounded-md py-1 text-left",
+                      "min-h-11 hover:bg-accent/50",
+                      comp === b.c && "bg-accent",
+                    )}
+                  >
+                    <span className="font-mono text-xs font-bold text-muted-foreground">{b.c}</span>
+                    <span className="h-3.5 rounded-r-[4px] bg-muted">
+                      <span
+                        className="block h-full rounded-r-[4px] transition-[width] duration-300"
+                        style={{
+                          width: `${maiorBarra ? (b.lacunas / maiorBarra) * 100 : 0}%`,
+                          background: `var(--calor-${degrauDeficit(
+                            b.total ? 100 - (100 * b.lacunas) / b.total : 100,
+                          )})`,
+                        }}
+                      />
+                    </span>
+                    <span className="text-right text-sm font-semibold tabular-nums">{b.lacunas}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
 
       <p className="mt-8 border-t pt-4 font-mono text-xs uppercase tracking-wider text-muted-foreground">
@@ -424,41 +403,6 @@ function PainelPage() {
 }
 
 // ------------------------------------------------------------------ peças
-
-function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  return (
-    <label className="min-w-0 flex-1 basis-40">
-      <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {rotulo}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function Seletor({
-  valor,
-  opcoes,
-  onMudar,
-}: {
-  valor: string;
-  opcoes: { valor: string; texto: string }[];
-  onMudar: (valor: string) => void;
-}) {
-  return (
-    <select
-      value={valor}
-      onChange={(e) => onMudar(e.target.value)}
-      className="mt-1 h-11 w-full rounded-lg border bg-background px-2.5 text-sm font-medium"
-    >
-      {opcoes.map((o) => (
-        <option key={o.valor} value={o.valor}>
-          {o.texto}
-        </option>
-      ))}
-    </select>
-  );
-}
 
 function Numero({
   rotulo,

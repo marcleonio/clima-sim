@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
@@ -7,10 +8,15 @@ import { CRITERIOS, type Criterio, type Prioridade } from "@/lib/prioridade";
 /**
  * A lista de ação: onde atuar primeiro, e por quê.
  *
- * A barra empilhada ao lado de cada linha não é decoração — é a decomposição do
- * índice. Um órgão de controle não aceita uma prioridade que não sabe explicar,
- * então cada critério aparece com a fatia que ele contribuiu. Passe o mouse e o
- * valor bruto aparece; a tabela abaixo dá o mesmo em texto.
+ * A barra ao lado de cada linha não é decoração — é a decomposição do índice.
+ * Um órgão de controle não aceita uma prioridade que não sabe explicar, então
+ * cada critério aparece com a fatia que contribuiu.
+ *
+ * A forma mudou na etapa E8. Antes eram doze cartões empilhados, cada um com
+ * nome, tipo, IPA, componente, contagem e barra — ocupando a tela inteira para
+ * comunicar o que cabia numa frase, já que as doze primeiras posições eram do
+ * mesmo componente. Agora a manchete vem primeiro e a lista é uma linha por
+ * item, com o detalhe aparecendo só no item sob o cursor.
  */
 
 /** Uma cor por critério, fixa. Não é escala: é identidade de categoria. */
@@ -22,12 +28,15 @@ const COR: Record<Criterio, string> = {
   precedente: "var(--muted-foreground)",
 };
 
-function BarraDecomposta({ prioridade }: { prioridade: Prioridade }) {
+function BarraDecomposta({ prioridade, alta }: { prioridade: Prioridade; alta: boolean }) {
   const { contribuicoes, ipa } = prioridade;
 
   return (
     <span
-      className="flex h-2.5 w-full overflow-hidden rounded-sm bg-muted"
+      className={cn(
+        "flex w-full overflow-hidden rounded-sm bg-muted transition-[height] duration-200",
+        alta ? "h-2.5" : "h-1.5",
+      )}
       role="img"
       aria-label={CRITERIOS.map(
         ({ id, nome }) =>
@@ -38,11 +47,7 @@ function BarraDecomposta({ prioridade }: { prioridade: Prioridade }) {
         const fatia = ipa > 0 ? (contribuicoes[id] / ipa) * 100 : 0;
         if (fatia <= 0) return null;
         return (
-          <span
-            key={id}
-            className="block h-full"
-            style={{ width: `${fatia}%`, background: COR[id] }}
-          />
+          <span key={id} className="block h-full" style={{ width: `${fatia}%`, background: COR[id] }} />
         );
       })}
     </span>
@@ -51,7 +56,7 @@ function BarraDecomposta({ prioridade }: { prioridade: Prioridade }) {
 
 export function LegendaCriterios() {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+    <ul className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-xs">
       {CRITERIOS.map(({ id, nome, explica }) => (
         <li key={id} className="flex items-center gap-1.5" title={explica}>
           <span
@@ -66,6 +71,25 @@ export function LegendaCriterios() {
   );
 }
 
+/**
+ * A frase que a lista está dizendo.
+ *
+ * Quando um único componente domina o topo, isso É o achado — e cabe numa
+ * linha, em vez de o leitor ter que perceber lendo doze cartões.
+ */
+function manchete(prioridades: Prioridade[]): string | null {
+  if (prioridades.length < 3) return null;
+
+  const contagem = new Map<string, number>();
+  for (const p of prioridades) contagem.set(p.componente, (contagem.get(p.componente) ?? 0) + 1);
+
+  const [codigo, quantos] = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]!;
+  if (quantos / prioridades.length < 0.5) return null;
+
+  const nome = prioridades.find((p) => p.componente === codigo)?.nomeComponente ?? codigo;
+  return `${quantos} das ${prioridades.length} primeiras posições são ${codigo} — ${nome}.`;
+}
+
 export function ListaAcao({
   prioridades,
   perfilLegivel,
@@ -74,6 +98,8 @@ export function ListaAcao({
   /** Descrição dos pesos usados — vai junto para a peça poder citar. */
   perfilLegivel: string;
 }) {
+  const [aberto, setAberto] = useState<string | null>(null);
+
   if (!prioridades.length) {
     return (
       <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -82,65 +108,81 @@ export function ListaAcao({
     );
   }
 
+  const frase = manchete(prioridades);
+
   return (
     <div className="space-y-3">
-      <ol className="space-y-2">
-        {prioridades.map((p, i) => (
-          <li
-            key={`${p.ente}/${p.componente}`}
-            className="rounded-lg border bg-card p-3 transition-colors hover:border-primary/50"
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 grid size-7 flex-none place-items-center rounded-md bg-muted font-mono text-xs font-bold tabular-nums">
-                {i + 1}
-              </span>
+      {frase && (
+        <p className="rounded-lg border border-[var(--sev-critico)]/40 bg-[var(--sev-critico-bg)] px-3 py-2 text-sm font-semibold">
+          {frase}
+        </p>
+      )}
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                  <p className="min-w-0 text-sm font-semibold">
-                    {p.ente}
-                    <span className="font-normal text-muted-foreground"> · {p.tipo}</span>
-                  </p>
-                  <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                    IPA {p.ipa.toFixed(3).replace(".", ",")}
-                  </p>
-                </div>
+      <ol className="divide-y rounded-xl border bg-card">
+        {prioridades.map((p, i) => {
+          const chave = `${p.ente}/${p.componente}`;
+          const alta = aberto === chave;
 
-                <p className="mt-0.5 text-sm">
-                  <span className="font-mono text-xs font-bold text-muted-foreground">
-                    {p.componente}
-                  </span>{" "}
-                  {p.nomeComponente}
-                  <span className="ml-1.5 font-semibold text-[var(--sev-critico)]">
-                    {p.lacunas}/{p.total} sem progresso
+          return (
+            <li
+              key={chave}
+              onMouseEnter={() => setAberto(chave)}
+              onMouseLeave={() => setAberto((atual) => (atual === chave ? null : atual))}
+              className={cn("transition-colors", alta && "bg-accent/40")}
+            >
+              <div className="flex items-center gap-2.5 px-3 py-2">
+                <span className="w-5 flex-none text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">
+                  {i + 1}
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="flex min-w-0 items-baseline gap-2">
+                    <span className="min-w-0 truncate text-sm font-semibold">{p.ente}</span>
+                    <span className="flex-none font-mono text-xs font-bold text-muted-foreground">
+                      {p.componente}
+                    </span>
+                    <span className="flex-none text-xs font-semibold text-[var(--sev-critico)] tabular-nums">
+                      {p.lacunas}/{p.total}
+                    </span>
                   </span>
-                </p>
+                  <span className="mt-1 block">
+                    <BarraDecomposta prioridade={p} alta={alta} />
+                  </span>
+                </span>
 
-                <div className="mt-2">
-                  <BarraDecomposta prioridade={p} />
-                </div>
+                <span className="flex-none font-mono text-xs tabular-nums text-muted-foreground">
+                  {p.ipa.toFixed(3).replace(".", ",")}
+                </span>
+
+                <Link
+                  to="/achados"
+                  search={{ ente: p.ente, comp: p.componente }}
+                  className="grid size-11 flex-none place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+                  aria-label={`Abrir o dossiê de ${p.ente} no componente ${p.componente}`}
+                >
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
               </div>
 
-              <Link
-                to="/achados"
-                search={{ ente: p.ente, comp: p.componente }}
-                className={cn(
-                  "grid size-11 flex-none place-items-center rounded-lg text-muted-foreground",
-                  "hover:bg-accent hover:text-foreground",
-                )}
-                aria-label={`Abrir o dossiê de ${p.ente} no componente ${p.componente}`}
-              >
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-            </div>
-          </li>
-        ))}
+              {/* o detalhe só aparece no item sob o cursor */}
+              {alta && (
+                <p className="px-3 pb-2 pl-10 text-xs text-muted-foreground">
+                  {p.tipo} · {p.nomeComponente} ·{" "}
+                  {CRITERIOS.map(
+                    ({ id, nome }) =>
+                      `${nome} ${((p.contribuicoes[id] / (p.ipa || 1)) * 100).toFixed(0)}%`,
+                  ).join(" · ")}
+                </p>
+              )}
+            </li>
+          );
+        })}
       </ol>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Índice de prioridade de atuação por soma ponderada, decomponível por construção. Pesos
-        deste recorte: {perfilLegivel}. Os pesos são escolha de política, não descoberta empírica —
-        e devem ser citados junto com qualquer número tirado daqui.
+        Índice de prioridade de atuação por soma ponderada, decomponível por construção. Pesos deste
+        recorte: {perfilLegivel}. Os pesos são escolha de política, não descoberta empírica — e devem
+        ser citados junto com qualquer número tirado daqui.
       </p>
     </div>
   );

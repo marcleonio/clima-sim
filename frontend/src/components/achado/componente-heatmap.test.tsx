@@ -170,7 +170,7 @@ describe("ComponenteHeatmap", () => {
       />,
     );
 
-    await usuario.click(celulaDe("F3"));
+    await usuario.click(celulaDe("F3")!);
     expect(aoFiltrar).toHaveBeenCalledWith("F3");
 
     // já filtrado por F3, o mesmo clique limpa
@@ -183,7 +183,7 @@ describe("ComponenteHeatmap", () => {
         onFiltrar={aoFiltrar}
       />,
     );
-    await usuario.click(celulaDe("F3"));
+    await usuario.click(celulaDe("F3")!);
     expect(aoFiltrar).toHaveBeenLastCalledWith(null);
   });
 

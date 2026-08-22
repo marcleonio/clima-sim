@@ -70,10 +70,17 @@ export function MapaBrasil({
     ente ? `var(--calor-${degrauDeficit(ente.mat)})` : "var(--muted)";
 
   return (
-    <div className="relative">
+    <div className="relative flex min-h-0 flex-1 items-center justify-center">
+      {/*
+        O mapa passa a caber no espaço que recebe, em vez de ditar a altura pela
+        largura. Antes o SVG tinha 773px fixos e, somado aos filtros, exigia
+        998px num viewport de 720 — operar o painel obrigava a subir e descer a
+        cada ajuste.
+      */}
       <svg
         viewBox={MAPA.viewBox}
-        className="h-auto w-full"
+        preserveAspectRatio="xMidYMid meet"
+        className="h-full max-h-full w-full"
         role="img"
         aria-label={`Mapa do Brasil com ${porUf.size} unidades federativas e ${porMunicipio.size} capitais avaliadas, coloridas pela lacuna de ação climática.`}
       >

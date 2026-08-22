@@ -34,3 +34,6 @@ coverage
 # Saída de build do nitro/wrangler
 .output
 .wrangler
+
+# Arquivos de trabalho da geracao de figuras (regeneraveis)
+analise/dados/_*
