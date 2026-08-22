@@ -44,14 +44,31 @@ export function MapaBrasil({
   selecionado,
   onSelecionar,
   mostrarCapitais = true,
+  realcado,
+  onRealcar,
 }: {
   /** Entes do recorte atual — o que estiver fora fica cinza, não some. */
   entes: Record<string, EnteResumo>;
   selecionado?: string | null;
   onSelecionar?: (nome: string | null) => void;
   mostrarCapitais?: boolean;
+  /** Ente sob o cursor em qualquer outro componente da tela. */
+  realcado?: string | null;
+  onRealcar?: (nome: string | null) => void;
 }) {
   const [sobre, setSobre] = useState<Destaque | null>(null);
+
+  /*
+   * Destacar, não excluir.
+   *
+   * Quando há um ente em foco, os demais são ATENUADOS em vez de removidos. Um
+   * filtro que apaga o resto tira o contexto junto com o dado: você deixa de ver
+   * onde o ente escolhido está em relação ao país. Atenuar responde à mesma
+   * pergunta sem perder a referência.
+   */
+  const emFoco = realcado ?? selecionado ?? null;
+  const opacidadeDe = (nome: string | undefined) =>
+    !emFoco || nome === emFoco ? 1 : 0.28;
 
   /** Índice por código IBGE, para o desenho achar o dado em O(1). */
   const { porUf, porMunicipio } = useMemo(() => {
@@ -97,8 +114,9 @@ export function MapaBrasil({
                 fill={corDe(alvo?.ente)}
                 stroke="var(--background)"
                 strokeWidth={ativo ? 2.5 : 1}
+                opacity={opacidadeDe(alvo?.nome)}
                 className={cn(
-                  "transition-[stroke-width]",
+                  "transition-[stroke-width,opacity] duration-200",
                   alvo && onSelecionar && "cursor-pointer",
                   ativo && "[stroke:var(--foreground)]",
                 )}
@@ -133,8 +151,12 @@ export function MapaBrasil({
                     x: caixa.x + caixa.width / 2,
                     y: caixa.y + caixa.height / 2,
                   });
+                  onRealcar?.(alvo.nome);
                 }}
-                onMouseLeave={() => setSobre(null)}
+                onMouseLeave={() => {
+                  setSobre(null);
+                  onRealcar?.(null);
+                }}
               />
             );
           })}
@@ -156,7 +178,11 @@ export function MapaBrasil({
                   fill={corDe(alvo.ente)}
                   stroke="var(--foreground)"
                   strokeWidth={ativo ? 2 : 1}
-                  className={cn("transition-[r]", onSelecionar && "cursor-pointer")}
+                  opacity={opacidadeDe(alvo.nome)}
+                  className={cn(
+                    "transition-[r,opacity] duration-200",
+                    onSelecionar && "cursor-pointer",
+                  )}
                   tabIndex={onSelecionar ? 0 : undefined}
                   role={onSelecionar ? "button" : undefined}
                   aria-label={`${alvo.nome} (capital): ${alvo.ente.lac} de ${alvo.ente.tot} requisitos sem progresso`}
@@ -175,8 +201,14 @@ export function MapaBrasil({
                         }
                       : undefined
                   }
-                  onMouseEnter={() => setSobre({ nome: alvo.nome, ente: alvo.ente, x: c.x, y: c.y })}
-                  onMouseLeave={() => setSobre(null)}
+                  onMouseEnter={() => {
+                    setSobre({ nome: alvo.nome, ente: alvo.ente, x: c.x, y: c.y });
+                    onRealcar?.(alvo.nome);
+                  }}
+                  onMouseLeave={() => {
+                    setSobre(null);
+                    onRealcar?.(null);
+                  }}
                 />
               );
             })}

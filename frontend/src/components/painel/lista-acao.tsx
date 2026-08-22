@@ -93,10 +93,15 @@ function manchete(prioridades: Prioridade[]): string | null {
 export function ListaAcao({
   prioridades,
   perfilLegivel,
+  realcado,
+  onRealcar,
 }: {
   prioridades: Prioridade[];
   /** Descrição dos pesos usados — vai junto para a peça poder citar. */
   perfilLegivel: string;
+  /** Ente sob o cursor em qualquer outro componente da tela. */
+  realcado?: string | null;
+  onRealcar?: (nome: string | null) => void;
 }) {
   const [aberto, setAberto] = useState<string | null>(null);
 
@@ -126,9 +131,20 @@ export function ListaAcao({
           return (
             <li
               key={chave}
-              onMouseEnter={() => setAberto(chave)}
-              onMouseLeave={() => setAberto((atual) => (atual === chave ? null : atual))}
-              className={cn("transition-colors", alta && "bg-accent/40")}
+              onMouseEnter={() => {
+                setAberto(chave);
+                onRealcar?.(p.ente);
+              }}
+              onMouseLeave={() => {
+                setAberto((atual) => (atual === chave ? null : atual));
+                onRealcar?.(null);
+              }}
+              className={cn(
+                "transition-colors duration-150",
+                alta && "bg-accent/40",
+                // realce vindo de outro componente: o mesmo ente acende aqui
+                !alta && realcado === p.ente && "bg-accent/25",
+              )}
             >
               <div className="flex items-center gap-2.5 px-3 py-2">
                 <span className="w-5 flex-none text-right font-mono text-xs font-bold tabular-nums text-muted-foreground">

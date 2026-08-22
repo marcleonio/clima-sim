@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BalaoAgente } from "@/components/agente/balao";
@@ -25,6 +25,7 @@ import {
   type Regiao,
   type TipoEnte,
 } from "@/lib/territorio";
+import { useNumeroAnimado } from "@/hooks/use-numero-animado";
 import { cn } from "@/lib/utils";
 import referenciasBrutas from "@/data/referencias.json";
 
@@ -153,6 +154,15 @@ function PainelPage() {
 
   const insights = useMemo(() => insightsDoRecorte(selecionados), [selecionados]);
 
+  /**
+   * O ente sob o cursor, em qualquer componente da tela.
+   *
+   * É o que faz mapa, ranking e barras parecerem um instrumento único em vez de
+   * três widgets: passar o mouse num item do ranking acende o mesmo ente no
+   * mapa, e vice-versa.
+   */
+  const [realcado, setRealcado] = useState<string | null>(null);
+
   const temFiltro = Boolean(
     busca.tipo || busca.regiao || busca.eixo || busca.comp || busca.ente,
   );
@@ -260,6 +270,8 @@ function PainelPage() {
             selecionado={ente ?? null}
             onSelecionar={(nome) => aplicar({ ente: nome ?? undefined })}
             mostrarCapitais={tipo !== "Estado"}
+            realcado={realcado}
+            onRealcar={setRealcado}
           />
         </section>
 
@@ -280,24 +292,29 @@ function PainelPage() {
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Numero
                 rotulo="Sem progresso"
-                valor={formatarNumero(resumo.lacunas)}
+                bruto={resumo.lacunas}
+                formatar={(v) => formatarNumero(Math.round(v))}
                 nota={`de ${formatarNumero(resumo.requisitos)}`}
                 tom="critico"
               />
               <Numero
                 rotulo="Maturidade média"
-                valor={formatarPercentual(resumo.maturidade)}
+                bruto={resumo.maturidade}
+                casas={1}
+                formatar={(v) => formatarPercentual(v)}
                 nota={`país ${formatarPercentual(META.nacional.mat)}`}
               />
               <Numero
                 rotulo="Sem nenhuma lacuna"
-                valor={String(resumo.semLacuna)}
+                bruto={resumo.semLacuna}
+                formatar={(v) => String(Math.round(v))}
                 nota={`de ${resumo.entes}`}
                 tom="ok"
               />
               <Numero
                 rotulo="Sob jurisdição"
-                valor={formatarNumero(resumo.populacao)}
+                bruto={resumo.populacao}
+                formatar={(v) => formatarNumero(Math.round(v))}
                 nota="estados e DF"
               />
             </dl>
@@ -320,7 +337,12 @@ function PainelPage() {
             </div>
           </div>
 
-          <ListaAcao prioridades={prioridades} perfilLegivel={descreverPesos(PESOS[perfil].pesos)} />
+          <ListaAcao
+            prioridades={prioridades}
+            perfilLegivel={descreverPesos(PESOS[perfil].pesos)}
+            realcado={realcado}
+            onRealcar={setRealcado}
+          />
         </section>
 
         <div className="space-y-4">
@@ -404,17 +426,30 @@ function PainelPage() {
 
 // ------------------------------------------------------------------ peças
 
+/**
+ * Um número do recorte, que interpola quando o filtro muda.
+ *
+ * Anima-se o que MUDOU DE VALOR: ver 640 correr até 213 comunica a magnitude da
+ * mudança durante a própria transição, sem o leitor precisar ter memorizado o
+ * valor anterior.
+ */
 function Numero({
   rotulo,
-  valor,
+  bruto,
+  formatar,
+  casas = 0,
   nota,
   tom,
 }: {
   rotulo: string;
-  valor: string;
+  bruto: number;
+  formatar: (valor: number) => string;
+  casas?: number;
   nota: string;
   tom?: "critico" | "ok";
 }) {
+  const animado = useNumeroAnimado(bruto, casas);
+
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{rotulo}</dt>
@@ -425,7 +460,7 @@ function Numero({
           tom === "ok" && "text-[var(--sev-ok)]",
         )}
       >
-        {valor}
+        {formatar(animado)}
       </dd>
       <dd className="mt-0.5 text-xs text-muted-foreground">{nota}</dd>
     </div>
