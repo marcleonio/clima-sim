@@ -8,6 +8,7 @@ import { AchadoList } from "@/components/achado/achado-list";
 import { ComponenteHeatmap } from "@/components/achado/componente-heatmap";
 import { DocumentoDialog } from "@/components/achado/documento-dialog";
 import { EntitySummary } from "@/components/achado/entity-summary";
+import { TrajetoriaPainel } from "@/components/achado/trajetoria-painel";
 import { Veredito } from "@/components/achado/veredito";
 import { cn } from "@/lib/utils";
 import {
@@ -18,7 +19,7 @@ import {
   severidade,
   taxaLacuna,
   vereditoDe,
-  type BaseDados,
+  type Ente,
   type MapaReferencias,
 } from "@/lib/achados";
 import {
@@ -30,14 +31,12 @@ import {
   type Perfil,
   type TipoDocumento,
 } from "@/lib/documentos";
-import baseBruta from "@/data/entes.json";
+import { carregarDossie, ENTES, META, NOMES_ENTES, taxasDosOutros } from "@/lib/dados";
 import referenciasBrutas from "@/data/referencias.json";
 
-const BASE = baseBruta as unknown as BaseDados;
 const REFERENCIAS = referenciasBrutas as unknown as MapaReferencias;
-const NOMES = Object.keys(BASE.entes).sort((a, b) => a.localeCompare(b, "pt-BR"));
-const DESTAQUES = ["Boa Vista", "Macapá", "Rio Grande do Sul", "São Paulo"].filter(
-  (n) => BASE.entes[n],
+const DESTAQUES = ["Boa Vista", "Macapá", "Rio Grande do Sul", "São Paulo (estado)"].filter(
+  (n) => ENTES[n],
 );
 const IDS_PERFIS: string[] = PERFIS.map((p) => p.id);
 
@@ -70,10 +69,14 @@ export const Route = createFileRoute("/achados")({
 
     // Um ente desconhecido não é descartado em silêncio: quem abriu um link
     // compartilhado com o nome errado precisa saber o que aconteceu.
-    return BASE.entes[nome]
+    return ENTES[nome]
       ? { ente: nome, ...(perfil && { perfil }), ...(comp && { comp }) }
       : { desconhecido: nome, ...(perfil && { perfil }) };
   },
+  // O dossiê do ente só desce quando alguém abre aquele ente. O índice, que é
+  // o que a busca e o ranking usam, já veio com a página.
+  loaderDeps: ({ search }) => ({ ente: search.ente }),
+  loader: ({ deps }) => (deps.ente ? carregarDossie(deps.ente) : null),
   head: () => ({
     meta: [
       { title: "Achado Climático — do dado público à peça de cobrança" },
@@ -89,6 +92,7 @@ export const Route = createFileRoute("/achados")({
 function AchadosPage() {
   const navegar = Route.useNavigate();
   const { ente: enteAtivo, desconhecido, perfil = "controle", comp } = Route.useSearch();
+  const dossie = Route.useLoaderData();
 
   const [consulta, setConsulta] = useState("");
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
@@ -96,13 +100,19 @@ function AchadosPage() {
   const [documento, setDocumento] = useState<DocumentoGerado | null>(null);
   const campoBusca = useRef<HTMLInputElement>(null);
 
-  const sugestoes = useMemo(() => filtrarEntes(NOMES, consulta).slice(0, 8), [consulta]);
-  const ente = enteAtivo ? (BASE.entes[enteAtivo] ?? null) : null;
+  const sugestoes = useMemo(() => filtrarEntes(NOMES_ENTES, consulta).slice(0, 8), [consulta]);
+
+  // O resumo vem do índice; os achados vêm do dossiê carregado sob demanda.
+  const ente = useMemo<Ente | null>(() => {
+    const resumo = enteAtivo ? ENTES[enteAtivo] : undefined;
+    if (!resumo) return null;
+    return { ...resumo, achados: dossie?.achados ?? [] };
+  }, [enteAtivo, dossie]);
 
   const veredito = useMemo(
     () =>
       ente && enteAtivo
-        ? vereditoDe(enteAtivo, ente, BASE.meta.total, BASE.meta.nacional.mat)
+        ? vereditoDe(enteAtivo, ente, META.total, META.nacional.mat)
         : null,
     [ente, enteAtivo],
   );
@@ -116,9 +126,11 @@ function AchadosPage() {
   );
 
   const proximos = useMemo(
-    () => (desconhecido ? filtrarEntes(NOMES, desconhecido).slice(0, 4) : []),
+    () => (desconhecido ? filtrarEntes(NOMES_ENTES, desconhecido).slice(0, 4) : []),
     [desconhecido],
   );
+
+  const outrasTaxas = useMemo(() => (enteAtivo ? taxasDosOutros(enteAtivo) : []), [enteAtivo]);
 
   const abrirEnte = useCallback(
     (nome: string) => {
@@ -169,8 +181,8 @@ function AchadosPage() {
           nomeEnte: enteAtivo,
           ente,
           achados: escolhidos,
-          snapshot: BASE.meta.snapshot,
-          versao: BASE.meta.versao,
+          snapshot: META.snapshot,
+          versao: META.versao,
           emitidoEm: new Date(),
         }),
       );
@@ -228,7 +240,7 @@ function AchadosPage() {
             aria-label="Resultados da busca"
           >
             {sugestoes.map((nome) => {
-              const alvo = BASE.entes[nome];
+              const alvo = ENTES[nome];
               if (!alvo) return null;
               const taxa = taxaLacuna(alvo);
               const sev = severidade(taxa);
@@ -268,10 +280,10 @@ function AchadosPage() {
         <section className="mx-auto max-w-xl rounded-xl border-2 border-[var(--sev-atencao)]/45 bg-[var(--sev-atencao-bg)] p-6 text-center">
           <SearchX className="mx-auto size-6 text-[var(--sev-atencao)]" aria-hidden />
           <h1 className="mt-3 text-lg font-bold">
-            Não encontramos “{desconhecido}” entre os {BASE.meta.total} entes avaliados
+            Não encontramos “{desconhecido}” entre os {META.total} entes avaliados
           </h1>
           <p className="mx-auto mt-2 max-w-prose text-sm text-muted-foreground">
-            A {BASE.meta.versao.toLowerCase()} cobre 24 estados, 24 capitais e o Distrito Federal.
+            A {META.versao.toLowerCase()} cobre 26 estados, 24 capitais e o Distrito Federal.
             Talvez você queira um destes:
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -308,7 +320,7 @@ function AchadosPage() {
             ))}
           </div>
           <p className="mt-8 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            {BASE.meta.total} entes · {BASE.meta.versao} · extração {BASE.meta.snapshot}
+            {META.total} entes · {META.versao} · extração {META.snapshot}
           </p>
         </section>
       )}
@@ -320,17 +332,25 @@ function AchadosPage() {
             <EntitySummary
               nome={enteAtivo}
               ente={ente}
-              snapshot={BASE.meta.snapshot}
-              nacional={BASE.meta.nacional.eixos}
-              mediaNacionalGeral={BASE.meta.nacional.mat}
+              snapshot={META.snapshot}
+              nacional={META.nacional.eixos}
+              mediaNacionalGeral={META.nacional.mat}
             />
 
             <Veredito veredito={veredito} />
 
+            <TrajetoriaPainel
+              nomeEnte={enteAtivo}
+              ente={ente}
+              rank={ente.rank}
+              selecionados={selecionados.size}
+              taxasDosOutros={outrasTaxas}
+            />
+
             <ComponenteHeatmap
               ente={ente}
-              nomes={BASE.meta.componentes}
-              nacional={BASE.meta.nacional.comps}
+              nomes={META.componentes}
+              nacional={META.nacional.comps}
               filtro={comp ?? null}
               onFiltrar={(componente) =>
                 void navegar({
@@ -349,7 +369,7 @@ function AchadosPage() {
               referencias={REFERENCIAS}
               nomeEnte={enteAtivo}
               componente={comp ?? null}
-              nomesComponentes={BASE.meta.componentes}
+              nomesComponentes={META.componentes}
               onLimparComponente={() => void navegar({ search: { ente: enteAtivo, perfil } })}
               onAlternar={alternar}
               onSelecionarVarios={selecionarVarios}

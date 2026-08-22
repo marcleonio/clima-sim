@@ -18,6 +18,7 @@ O painel público mostra só a nota. A evidência já existe; falta entregá-la.
 
 | Arquivo | O que é |
 |---|---|
+| `gerar-dados.mjs` | **Gerador dos dados do frontend** — lê o CSV oficial e emite `indice.json` e `dossies/*.json`. Confere o resultado contra o que já estava publicado e falha se divergir |
 | `01-exploracao-e-tese.ipynb` | Notebook executado que prova a tese, célula a célula, sobre o CSV real |
 | `gerar_notebook.py` | Script que regenera o notebook (fonte de verdade — edite aqui, não no `.ipynb`) |
 | `fluxo-da-solucao.html` | Arquitetura: diagramas de fluxo, ingestão, etapas de uso, atores e base factual |
@@ -28,6 +29,14 @@ O painel público mostra só a nota. A evidência já existe; falta entregá-la.
 | `dados/manual-pcb.pdf` · `.txt` | Manual de aplicação do Painel ClimaBrasil (106 p.) |
 
 ## Reproduzir
+
+Os dados que o frontend consome:
+
+```bash
+node analise/gerar-dados.mjs
+```
+
+O notebook da tese:
 
 ```bash
 python -m pip install pandas numpy matplotlib nbformat nbconvert ipykernel
@@ -49,11 +58,23 @@ O notebook roda offline usando o cache do IBGE; com rede, busca os dados atualiz
 | Componente de Defesa civil (P5) | 35,8% — apoiado na **Lei 12.608/2012** e no Marco de Sendai |
 | População em estados sem plena adaptação | **103,4 milhões** |
 | População em estados com lacuna em Defesa Civil | **73,9 milhões** |
-| Amplitude federativa | Boa Vista 97,7% × São Paulo, MG e RJ 0% |
+| Amplitude federativa | Boa Vista 97,7% × São Paulo (estado), MG e RJ (capital) 0% |
+| Entes avaliados | **51** — 26 estados, 24 capitais e o DF |
 
 ## ⚠️ Avisos metodológicos
 
 Leia antes de citar qualquer número em público:
+
+0. **Colisão de entidades — corrigida em agosto/2026.** O CSV identifica cada
+   avaliação por `entity_name`, e quatro entes têm nome repetido: os estados e
+   as capitais de São Paulo e do Rio de Janeiro. A primeira geração dos dados
+   agrupou por nome e ficou com o município, **descartando os estados de SP e
+   RJ** — o que fazia o produto dizer "49 entes avaliados" quando são 51, e
+   escondia o ente com melhor desempenho do país (São Paulo estado, maturidade
+   93,3, zero lacunas). A chave passou a ser `entity_name` + `entity_id`, e o
+   nome só recebe sufixo (`São Paulo (estado)` / `São Paulo (capital)`) quando
+   há de fato colisão. Qualquer material anterior que cite "49 entes" está
+   desatualizado.
 
 1. **`backend/data/pcb-raw-data-2026.csv` é sintético.** Foi gerado por
    `scripts/gerar-csv-ano.js`, que só troca o ano do snapshot para testar a tela de

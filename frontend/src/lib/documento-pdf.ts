@@ -1,16 +1,18 @@
-import { jsPDF } from "jspdf";
-
 import { codigoAchado } from "@/lib/achados";
 import type { DocumentoGerado } from "@/lib/documentos";
 
 /**
  * Renderiza a peça de encaminhamento como PDF A4 e dispara o download.
  *
- * Mantém o mesmo estilo de construção do clima-pdf.ts (jsPDF em pontos, com
- * controle manual de quebra de página) para que os dois relatórios do produto
- * tenham a mesma aparência impressa.
+ * jsPDF entra por importação dinâmica: ele e o html2canvas somam quase 200 KB
+ * e só fazem falta no clique de "Baixar PDF". Estaticamente importados,
+ * viajavam para todo mundo que abrisse a página, inclusive quem só queria
+ * consultar um ente.
+ *
+ * jsPDF em pontos, com controle manual de quebra de página.
  */
-export function baixarDocumentoPdf(doc: DocumentoGerado): void {
+export async function baixarDocumentoPdf(doc: DocumentoGerado): Promise<void> {
+  const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const margem = 56;
   const largura = pdf.internal.pageSize.getWidth() - margem * 2;

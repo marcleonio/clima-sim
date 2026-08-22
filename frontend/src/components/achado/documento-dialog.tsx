@@ -50,7 +50,7 @@ export function DocumentoDialog({
               <Printer className="mr-1.5 size-3.5" aria-hidden />
               Imprimir
             </Button>
-            <Button size="sm" onClick={() => baixarDocumentoPdf(documento)}>
+            <Button size="sm" onClick={() => void baixarDocumentoPdf(documento)}>
               <FileDown className="mr-1.5 size-3.5" aria-hidden />
               Baixar PDF
             </Button>
