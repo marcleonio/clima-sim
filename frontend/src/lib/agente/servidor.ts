@@ -1,21 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { DESCRICOES, esquemas, ferramentas, type NomeFerramenta } from "@/lib/agente/ferramentas";
+import { escolherProvedor, perguntar } from "@/lib/agente/provedor";
 import { META } from "@/lib/dados";
 
 /**
  * O laço do agente, do lado do servidor.
  *
  * Isto roda em `createServerFn` por um motivo só, e ele não é organizacional:
- * a chave da API não pode chegar ao navegador. Qualquer chamada à Anthropic
+ * a chave da API não pode chegar ao navegador. Qualquer chamada ao provedor
  * feita no cliente publica a credencial para todo mundo que abrir o DevTools.
  *
  * O modelo aqui não recebe a base para "consultar": ele recebe funções que a
  * consultam, e o retorno dessas funções é a única fonte de fato na resposta.
+ * Por isso trocar de provedor troca o REDATOR, nunca a evidência — quem escolhe
+ * qual usar é `lib/agente/provedor.ts`, a partir do ambiente.
  */
-
-const MODELO = "claude-opus-5";
 
 /**
  * O texto do sistema é idêntico em toda requisição — é exatamente o caso de uso
@@ -105,77 +105,65 @@ export interface RespostaAgente {
   texto: string;
   /** Quais ferramentas foram chamadas — a resposta é auditável. */
   ferramentasUsadas: string[];
+  /** Provedor e modelo que redigiram — a resposta é rastreável. */
+  origem?: string;
   indisponivel?: "sem_chave" | "erro";
   detalhe?: string;
+}
+
+/**
+ * Carrega o .env uma vez, sob demanda.
+ *
+ * Em produção as variáveis vêm do ambiente de verdade e isto não faz nada. Em
+ * desenvolvimento, o Vite só expõe as prefixadas com VITE_ — que é justamente
+ * o que NÃO se pode usar para uma chave de API, porque VITE_ vai para o bundle
+ * do navegador.
+ */
+let ambienteCarregado = false;
+async function carregarAmbiente(): Promise<void> {
+  if (ambienteCarregado) return;
+  ambienteCarregado = true;
+  try {
+    const dotenv = await import("dotenv");
+    dotenv.config();
+  } catch {
+    // Sem dotenv instalado, segue com o ambiente do processo.
+  }
 }
 
 export const perguntarAoAgente = createServerFn({ method: "POST" })
   .validator((dados: unknown) => entrada.parse(dados))
   .handler(async ({ data }): Promise<RespostaAgente> => {
-    const chave = process.env["ANTHROPIC_API_KEY"];
-    if (!chave) {
+    await carregarAmbiente();
+
+    const escolha = escolherProvedor(process.env as Record<string, string | undefined>);
+
+    if (!escolha) {
       return {
         texto:
-          "O assistente conversacional precisa de uma chave da API da Anthropic configurada no servidor " +
-          "(ANTHROPIC_API_KEY). Sem ela, as consultas diretas ao painel continuam funcionando normalmente.",
+          "O assistente conversacional precisa de uma chave de modelo no servidor — GROQ_API_KEY " +
+          "ou ANTHROPIC_API_KEY. Sem ela, as consultas diretas ao painel continuam funcionando " +
+          "normalmente: elas são calculadas localmente e não dependem de API.",
         ferramentasUsadas: [],
         indisponivel: "sem_chave",
       };
     }
 
     try {
-      // JSON Schema em vez do helper de Zod: o `betaZodTool` exige os tipos
-      // internos do Zod v4 e o projeto está no v3.
-      const [{ default: Anthropic }, { betaTool }] = await Promise.all([
-        import("@anthropic-ai/sdk"),
-        import("@anthropic-ai/sdk/helpers/beta/json-schema"),
-      ]);
-
-      const usadas: string[] = [];
-
-      const definidas = (Object.keys(ferramentas) as NomeFerramenta[]).map((nome) =>
-        betaTool({
-          name: nome,
-          description: DESCRICOES[nome],
-          inputSchema: esquemas[nome] as never,
-          run: async (entradaDaFerramenta: unknown) => {
-            usadas.push(nome);
-            const executar = ferramentas[nome] as (a: unknown) => Promise<unknown>;
-            return JSON.stringify(await executar(entradaDaFerramenta));
-          },
-        }),
-      );
-
       const historico = (data.historico ?? []).map((m) => ({
         role: m.papel === "usuario" ? ("user" as const) : ("assistant" as const),
         content: m.texto,
       }));
 
-      const resposta = await new Anthropic({ apiKey: chave }).beta.messages.toolRunner({
-        model: MODELO,
-        max_tokens: 8000,
-        // Adaptive: o modelo decide quando e quanto pensar. `effort: medium`
-        // porque a tarefa é escolher ferramenta e redigir, não raciocinar longe.
-        thinking: { type: "adaptive" },
-        output_config: { effort: "medium" },
-        // O sistema é byte a byte idêntico entre requisições: é o prefixo que
-        // vale a pena cachear.
-        system: [{ type: "text", text: SISTEMA, cache_control: { type: "ephemeral" } }],
-        tools: definidas,
-        messages: [...historico, { role: "user", content: data.pergunta }],
-      });
-
-      const texto = resposta.content
-        .filter((bloco): bloco is { type: "text"; text: string } & typeof bloco =>
-          bloco.type === "text",
-        )
-        .map((bloco) => bloco.text)
-        .join("\n\n")
-        .trim();
+      const resultado = await perguntar(escolha, SISTEMA, [
+        ...historico,
+        { role: "user", content: data.pergunta },
+      ]);
 
       return {
-        texto: texto || "Não consegui formular uma resposta a partir dos dados disponíveis.",
-        ferramentasUsadas: [...new Set(usadas)],
+        texto: resultado.texto || "Não consegui formular uma resposta a partir dos dados disponíveis.",
+        ferramentasUsadas: resultado.ferramentasUsadas,
+        origem: resultado.origem,
       };
     } catch (erro) {
       return {
