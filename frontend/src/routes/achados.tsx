@@ -4,6 +4,7 @@ import { ArrowRight, FileText, Search, SearchX, ShieldAlert, Undo2, X } from "lu
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BalaoAgente } from "@/components/agente/balao";
 import { AchadoList } from "@/components/achado/achado-list";
 import { ComponenteHeatmap } from "@/components/achado/componente-heatmap";
 import { DocumentoDialog } from "@/components/achado/documento-dialog";
@@ -32,6 +33,7 @@ import {
   type Perfil,
   type TipoDocumento,
 } from "@/lib/documentos";
+import { insightsDoEnte } from "@/lib/agente/insights";
 import { carregarDossie, ENTES, META, NOMES_ENTES, taxasDosOutros } from "@/lib/dados";
 import referenciasBrutas from "@/data/referencias.json";
 
@@ -132,6 +134,11 @@ function AchadosPage() {
   );
 
   const outrasTaxas = useMemo(() => (enteAtivo ? taxasDosOutros(enteAtivo) : []), [enteAtivo]);
+
+  const insights = useMemo(() => {
+    const resumo = enteAtivo ? ENTES[enteAtivo] : undefined;
+    return resumo && enteAtivo ? insightsDoEnte(enteAtivo, resumo) : [];
+  }, [enteAtivo]);
 
   const abrirEnte = useCallback(
     (nome: string) => {
@@ -517,6 +524,15 @@ function AchadosPage() {
         documento={documento}
         aberto={!!documento}
         onFechar={() => setDocumento(null)}
+      />
+
+      <BalaoAgente
+        contexto={
+          enteAtivo
+            ? `O usuário está no dossiê de ${enteAtivo}, com perfil ${perfil}${comp ? `, filtrando pelo componente ${comp}` : ""}.`
+            : "O usuário está na tela de busca de entes."
+        }
+        insights={insights}
       />
     </div>
   );

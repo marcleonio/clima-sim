@@ -2,11 +2,13 @@ import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, RotateCcw } from "lucide-react";
 
+import { BalaoAgente } from "@/components/agente/balao";
 import { degrauDeficit } from "@/components/achado/componente-heatmap";
 import { LegendaMapa, MapaBrasil } from "@/components/painel/mapa-brasil";
 import { LegendaCriterios, ListaAcao } from "@/components/painel/lista-acao";
 import { Button } from "@/components/ui/button";
 import { formatarNumero, formatarPercentual, type MapaReferencias } from "@/lib/achados";
+import { insightsDoRecorte } from "@/lib/agente/insights";
 import { ENTES, META } from "@/lib/dados";
 import {
   descreverPesos,
@@ -133,6 +135,8 @@ function PainelPage() {
 
   const popP5 = useMemo(() => populacaoSobLacuna(ENTES, "P5"), []);
   const popP2 = useMemo(() => populacaoSobLacuna(ENTES, "P2"), []);
+
+  const insights = useMemo(() => insightsDoRecorte(selecionados), [selecionados]);
 
   const temFiltro = Boolean(
     busca.tipo || busca.regiao || busca.eixo || busca.comp || busca.ente,
@@ -395,6 +399,11 @@ function PainelPage() {
       <p className="mt-8 border-t pt-4 font-mono text-xs uppercase tracking-wider text-muted-foreground">
         {META.total} entes · {META.versao} · extração {META.snapshot} · Painel ClimaBrasil / TCU
       </p>
+
+      <BalaoAgente
+        contexto={`O usuário está no painel nacional, recorte: tipo ${tipo}, região ${regiao}, eixo ${eixo ?? "todos"}, componente ${comp ?? "todos"}, perfil de priorização ${perfil}.`}
+        insights={insights}
+      />
     </div>
   );
 }
