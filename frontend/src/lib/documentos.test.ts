@@ -152,3 +152,80 @@ describe("gerarDocumento", () => {
     expect(doc.achados.at(0)?.c).toBe("P5");
   });
 });
+
+// ------------------------------------------------------- template da peça
+
+/** Contexto com os dois achados do ente, para o agrupamento ter o que agrupar. */
+const TODOS = { ...CONTEXTO, achados: [] as Achado[] };
+
+describe("template da peça", () => {
+  it("monta um quadro-resumo com o que a primeira página precisa responder", () => {
+    const doc = gerarDocumento("oficio", { ...TODOS, totalDeEntes: 51 });
+
+    expect(doc.quadro.achados).toBe(doc.achados.length);
+    expect(doc.quadro.requisitos).toBe(ENTE.tot);
+    expect(doc.quadro.posicao).toBe(ENTE.rank);
+    expect(doc.quadro.totalDeEntes).toBe(51);
+    expect(doc.quadro.maturidade).toBe(ENTE.mat);
+    expect(doc.quadro.populacao).toBe(ENTE.pop);
+  });
+
+  it("conta separadamente os achados de risco de vida", () => {
+    // P5 é defesa civil; F1 não é.
+    const doc = gerarDocumento("oficio", TODOS);
+
+    expect(doc.quadro.achados).toBe(2);
+    expect(doc.quadro.riscoDeVida).toBe(1);
+  });
+
+  it("agrupa o corpo por eixo, sem perder nem repetir achado", () => {
+    const doc = gerarDocumento("oficio", TODOS);
+
+    expect(doc.blocos.map((b) => b.eixo).sort()).toEqual(["Financiamento", "Políticas públicas"]);
+    expect(doc.blocos.flatMap((b) => b.achados)).toHaveLength(doc.achados.length);
+  });
+
+  it("o quadro por eixo bate com o corpo", () => {
+    const doc = gerarDocumento("oficio", TODOS);
+
+    for (const { eixo, qtd } of doc.quadro.porEixo) {
+      expect(doc.blocos.find((b) => b.eixo === eixo)?.achados, eixo).toHaveLength(qtd);
+    }
+  });
+
+  it("cada fluxo tem seu timbre e seu campo de assinatura", () => {
+    expect(gerarDocumento("oficio", TODOS).timbre.assinatura).toMatch(/autoridade/i);
+    expect(gerarDocumento("plano", TODOS).timbre.assinatura).toMatch(/respons[áa]vel/i);
+    expect(gerarDocumento("legis", TODOS).timbre.origem).toMatch(/legislativo/i);
+    expect(gerarDocumento("lai", TODOS).timbre.origem).toMatch(/solicitante/i);
+  });
+
+  it("explica o que o código de conferência prova, sem chamá-lo de criptográfico", () => {
+    const doc = gerarDocumento("oficio", TODOS);
+
+    expect(doc.conferencia).toContain(doc.protocolo.sha);
+    expect(doc.conferencia).toContain("2025-09-12");
+    expect(doc.conferencia).toMatch(/reproduza/i);
+    // djb2 não é criptografia e o texto não pode sugerir que seja
+    expect(doc.conferencia).not.toMatch(/SHA|criptogr|assinatura digital/i);
+  });
+
+  it("cita o universo da avaliação quando ele é conhecido", () => {
+    const com = gerarDocumento("oficio", { ...TODOS, totalDeEntes: 51 });
+    expect(com.paragrafos.join(" ")).toContain("entre os 51 entes avaliados");
+
+    const sem = gerarDocumento("oficio", TODOS);
+    expect(sem.paragrafos.join(" ")).toContain("entre os entes avaliados");
+  });
+
+  it("carrega a trajetória quando ela é fornecida, e nada quando não é", () => {
+    const frase = "Se 2 requisitos saírem de Sem progresso para Estágio inicial…";
+
+    expect(gerarDocumento("oficio", { ...TODOS, trajetoria: frase }).trajetoria).toBe(frase);
+    expect(gerarDocumento("oficio", TODOS).trajetoria).toBeNull();
+  });
+
+  it("não calcula projeção por conta própria — isso mora em lib/trajetoria", () => {
+    expect(gerarDocumento("oficio", TODOS).trajetoria).toBeNull();
+  });
+});

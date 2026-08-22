@@ -11,6 +11,7 @@
  */
 
 import {
+  COMPONENTES_CRITICOS,
   codigoAchado,
   formatarNumero,
   formatarPercentual,
@@ -124,7 +125,48 @@ export interface ContextoDocumento {
   snapshot: string;
   versao: string;
   emitidoEm: Date;
+  /** Quantos entes a avaliação cobre — para situar a posição do ente. */
+  totalDeEntes?: number;
+  /**
+   * Frase da trajetória de regularização, quando faz sentido incluir.
+   * Vem pronta de `descreverTrajetoria`: este módulo não calcula projeção.
+   */
+  trajetoria?: string | null;
 }
+
+/** O quadro de uma página que abre a peça, antes do corpo. */
+export interface QuadroResumo {
+  achados: number;
+  requisitos: number;
+  /** Quantos achados em cada eixo, do mais frágil para o menos. */
+  porEixo: { eixo: string; qtd: number }[];
+  /** Achados em requisitos de defesa civil e adaptação. */
+  riscoDeVida: number;
+  populacao: number | null;
+  posicao: number;
+  totalDeEntes: number | null;
+  maturidade: number;
+}
+
+/** O corpo da peça, agrupado por eixo — 43 achados corridos não se lê. */
+export interface BlocoEixo {
+  eixo: string;
+  achados: Achado[];
+}
+
+/** Identificação de quem emite. O mesmo gerador serve os quatro fluxos. */
+export interface Timbre {
+  origem: string;
+  /** Rótulo do campo de assinatura ao pé da peça. */
+  assinatura: string;
+}
+
+const TIMBRE_POR_TIPO: Record<TipoDocumento, Timbre> = {
+  oficio: { origem: "Controle externo", assinatura: "Autoridade signatária" },
+  lai: { origem: "Solicitante", assinatura: "Requerente" },
+  plano: { origem: "Ente avaliado", assinatura: "Responsável pelo plano" },
+  legis: { origem: "Poder Legislativo", assinatura: "Parlamentar proponente" },
+};
 
 export interface DocumentoGerado {
   tipo: TipoDocumento;
@@ -141,6 +183,16 @@ export interface DocumentoGerado {
   /** true quando o documento é um formulário a ser completado à mão. */
   preencherCampos: boolean;
   fonte: string;
+
+  /** Quadro de uma página que abre a peça. */
+  quadro: QuadroResumo;
+  /** O mesmo conjunto de achados, agrupado por eixo, para o corpo. */
+  blocos: BlocoEixo[];
+  /** Projeção da escala oficial, quando houver seleção. */
+  trajetoria: string | null;
+  timbre: Timbre;
+  /** O que o código de conferência prova, em português. */
+  conferencia: string;
 }
 
 function dataPorExtenso(data: Date): string {
@@ -173,6 +225,36 @@ export function gerarDocumento(
     `Metodologia ClimateScanner/INTOSAI. População: IBGE. ` +
     `Conferência: o mesmo conjunto de achados e a mesma extração reproduzem este protocolo.`;
 
+  // Quantos achados em cada eixo, do eixo mais frágil para o menos.
+  const porEixo = Object.entries(
+    achados.reduce<Record<string, number>>((acc, a) => {
+      acc[a.eixo] = (acc[a.eixo] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .map(([eixo, qtd]) => ({ eixo, qtd }))
+    .sort((a, b) => b.qtd - a.qtd || a.eixo.localeCompare(b.eixo, "pt-BR"));
+
+  const quadro: QuadroResumo = {
+    achados: achados.length,
+    requisitos: ente.tot,
+    porEixo,
+    riscoDeVida: achados.filter((a) =>
+      (COMPONENTES_CRITICOS as readonly string[]).includes(a.c),
+    ).length,
+    populacao: ente.pop,
+    posicao: ente.rank,
+    totalDeEntes: contexto.totalDeEntes ?? null,
+    maturidade: ente.mat,
+  };
+
+  // 43 achados num bloco corrido não se lê. Agrupados por eixo, viram três
+  // seções com quebra de página entre elas.
+  const blocos: BlocoEixo[] = porEixo.map(({ eixo }) => ({
+    eixo,
+    achados: achados.filter((a) => a.eixo === eixo),
+  }));
+
   const base = {
     tipo,
     protocolo,
@@ -180,11 +262,24 @@ export function gerarDocumento(
     achados,
     fonte,
     preencherCampos: false,
+    quadro,
+    blocos,
+    trajetoria: contexto.trajetoria ?? null,
+    timbre: TIMBRE_POR_TIPO[tipo],
+    // "SHA" sugere criptografia, que não é o caso — é djb2, para conferência.
+    // O que vale dizer é o que o código prova, não como ele é calculado.
+    conferencia:
+      "Reproduza esta peça a partir do mesmo ente, da mesma seleção de achados e da mesma " +
+      `extração (${snapshot}) para obter o código ${protocolo.sha}. Código diferente significa ` +
+      "conjunto ou versão diferente.",
   };
 
+  const universo = contexto.totalDeEntes
+    ? `entre os ${contexto.totalDeEntes} entes avaliados no país`
+    : "entre os entes avaliados no país";
   const diagnostico =
     `O ente apresenta ${ente.lac} de ${ente.tot} requisitos sem progresso (${taxa}), ` +
-    `ocupando a ${ente.rank}ª posição em fragilidade entre os entes avaliados no país.`;
+    `ocupando a ${ente.rank}ª posição em fragilidade ${universo}.`;
 
   switch (tipo) {
     case "oficio":

@@ -11,6 +11,7 @@ import { EntitySummary } from "@/components/achado/entity-summary";
 import { TrajetoriaPainel } from "@/components/achado/trajetoria-painel";
 import { Veredito } from "@/components/achado/veredito";
 import { cn } from "@/lib/utils";
+import { descreverTrajetoria, posicaoProjetada, projetar } from "@/lib/trajetoria";
 import {
   codigoAchado,
   COMPONENTES_CRITICOS,
@@ -176,6 +177,19 @@ function AchadosPage() {
     (tipo: TipoDocumento) => {
       if (!ente || !enteAtivo) return;
       const escolhidos = ente.achados.filter((a) => selecionados.has(codigoAchado(a)));
+
+      // A peça leva a mesma projeção que a tela mostra — aritmética da escala
+      // oficial sobre os achados que ela própria endereça.
+      const movidos = escolhidos.length || ente.achados.length;
+      const projecao = projetar(ente, movidos, 1);
+      const trajetoria = ente.lac
+        ? descreverTrajetoria(
+            enteAtivo,
+            projecao,
+            posicaoProjetada(ente, projecao, outrasTaxas, ente.rank),
+          )
+        : null;
+
       setDocumento(
         gerarDocumento(tipo, {
           nomeEnte: enteAtivo,
@@ -184,10 +198,12 @@ function AchadosPage() {
           snapshot: META.snapshot,
           versao: META.versao,
           emitidoEm: new Date(),
+          totalDeEntes: META.total,
+          trajetoria,
         }),
       );
     },
-    [ente, enteAtivo, selecionados],
+    [ente, enteAtivo, selecionados, outrasTaxas],
   );
 
   const qtdSelecionada = selecionados.size;
