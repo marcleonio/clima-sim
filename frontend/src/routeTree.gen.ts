@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AchadosRouteImport } from './routes/achados'
 import { Route as ImpactoRouteImport } from './routes/impacto'
 import { Route as MetodologiaRouteImport } from './routes/metodologia'
+import { Route as PainelRouteImport } from './routes/painel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const MetodologiaRoute = MetodologiaRouteImport.update({
   path: '/metodologia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PainelRoute = PainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/achados': typeof AchadosRoute
   '/impacto': typeof ImpactoRoute
   '/metodologia': typeof MetodologiaRoute
+  '/painel': typeof PainelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/achados': typeof AchadosRoute
   '/impacto': typeof ImpactoRoute
   '/metodologia': typeof MetodologiaRoute
+  '/painel': typeof PainelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/achados': typeof AchadosRoute
   '/impacto': typeof ImpactoRoute
   '/metodologia': typeof MetodologiaRoute
+  '/painel': typeof PainelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/achados' | '/impacto' | '/metodologia'
+  fullPaths: '/' | '/achados' | '/impacto' | '/metodologia' | '/painel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/achados' | '/impacto' | '/metodologia'
-  id: '__root__' | '/' | '/achados' | '/impacto' | '/metodologia'
+  to: '/' | '/achados' | '/impacto' | '/metodologia' | '/painel'
+  id: '__root__' | '/' | '/achados' | '/impacto' | '/metodologia' | '/painel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   AchadosRoute: typeof AchadosRoute
   ImpactoRoute: typeof ImpactoRoute
   MetodologiaRoute: typeof MetodologiaRoute
+  PainelRoute: typeof PainelRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MetodologiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/painel': {
+      id: '/painel'
+      path: '/painel'
+      fullPath: '/painel'
+      preLoaderRoute: typeof PainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AchadosRoute: AchadosRoute,
   ImpactoRoute: ImpactoRoute,
   MetodologiaRoute: MetodologiaRoute,
+  PainelRoute: PainelRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

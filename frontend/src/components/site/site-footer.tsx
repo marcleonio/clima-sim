@@ -21,6 +21,11 @@ export function SiteFooter() {
           </p>
           <ul className="opacity-90">
             <li className="flex">
+              <Link to="/painel" className={LINK}>
+                Painel nacional
+              </Link>
+            </li>
+            <li className="flex">
               <Link to="/achados" className={LINK}>
                 Consultar um ente
               </Link>
