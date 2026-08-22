@@ -212,6 +212,16 @@ export const ferramentas = {
       mediaNacional: META.nacional.mat,
       posicaoEmFragilidade: alvo.rank,
       totalDeEntes: META.total,
+      // Capacidade fiscal: distingue "não gastou" de "não tinha" no eixo
+      // Financiamento, que é o mais frágil do país.
+      financas: alvo.fin
+        ? {
+            receitaRealizada: alvo.fin.receita,
+            receitaPorHabitante: alvo.fin.perCapita,
+            exercicio: alvo.fin.exercicio,
+            fonte: "SICONFI / Tesouro Nacional",
+          }
+        : null,
       porEixo: alvo.eixos,
       componentesComLacuna: Object.entries(alvo.comps)
         .filter(([, r]) => r.l > 0)

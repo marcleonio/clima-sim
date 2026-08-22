@@ -1,0 +1,263 @@
+{
+ "fonte": "SICONFI / Tesouro Nacional — DCA Anexo I-C, conta TotalReceitas",
+ "url": "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca",
+ "exercicio": 2023,
+ "extraidoEm": "2026-08-22",
+ "entes": {
+  "Acre": {
+   "receita": 11628569725.84,
+   "perCapita": 12823,
+   "instituicao": "Governo do Estado do Acre"
+  },
+  "Alagoas": {
+   "receita": 21628591813.48,
+   "perCapita": 6427,
+   "instituicao": "Governo do Estado de Alagoas"
+  },
+  "Amapá": {
+   "receita": 11567484061.59,
+   "perCapita": 13181,
+   "instituicao": "Governo do Estado do Amapá"
+  },
+  "Amazonas": {
+   "receita": 34021657164.61,
+   "perCapita": 7968,
+   "instituicao": "Governo do Estado do Amazonas"
+  },
+  "Bahia": {
+   "receita": 84104004055.41,
+   "perCapita": 5612,
+   "instituicao": "Governo do Estado da Bahia"
+  },
+  "Belém": {
+   "receita": 5363303593.56,
+   "perCapita": 3560,
+   "instituicao": "Prefeitura Municipal de Belém - PA"
+  },
+  "Belo Horizonte": {
+   "receita": 18319026877.9,
+   "perCapita": 7239,
+   "instituicao": "Prefeitura Municipal de Belo Horizonte - MG"
+  },
+  "Boa Vista": {
+   "receita": 2509321244.44,
+   "perCapita": 5748,
+   "instituicao": "Prefeitura Municipal de Boa Vista - RR"
+  },
+  "Campo Grande": {
+   "receita": 5842461999.97,
+   "perCapita": 6378,
+   "instituicao": "Prefeitura Municipal de Campo Grande - MS"
+  },
+  "Ceará": {
+   "receita": 48132743074.12,
+   "perCapita": 5209,
+   "instituicao": "Governo do Estado do Ceará"
+  },
+  "Cuiabá": {
+   "receita": 4539785336.38,
+   "perCapita": 7280,
+   "instituicao": "Prefeitura Municipal de Cuiabá - MT"
+  },
+  "Curitiba": {
+   "receita": 13332064200.59,
+   "perCapita": 6789,
+   "instituicao": "Prefeitura Municipal de Curitiba - PR"
+  },
+  "Distrito Federal": {
+   "receita": 39417475258.51,
+   "perCapita": 12739,
+   "instituicao": "Governo do Distrito Federal"
+  },
+  "Espírito Santo": {
+   "receita": 34681808404.29,
+   "perCapita": 8441,
+   "instituicao": "Governo do Estado do Espírito Santo"
+  },
+  "Florianópolis": {
+   "receita": 3542672476,
+   "perCapita": 6859,
+   "instituicao": "Prefeitura Municipal de Florianópolis - SC"
+  },
+  "Fortaleza": {
+   "receita": 13483834203.27,
+   "perCapita": 4988,
+   "instituicao": "Prefeitura Municipal de Fortaleza - CE"
+  },
+  "Goiás": {
+   "receita": 59387630444.84,
+   "perCapita": 8241,
+   "instituicao": "Governo do Estado de Goiás"
+  },
+  "João Pessoa": {
+   "receita": 4273525645.34,
+   "perCapita": 5175,
+   "instituicao": "Prefeitura Municipal de João Pessoa - PB"
+  },
+  "Macapá": {
+   "receita": 1930225517.3,
+   "perCapita": 3695,
+   "instituicao": "Prefeitura Municipal de Macapá - AP"
+  },
+  "Maceió": {
+   "receita": 4984730335.07,
+   "perCapita": 4832,
+   "instituicao": "Prefeitura Municipal de Maceió - AL"
+  },
+  "Manaus": {
+   "receita": 10356984498.54,
+   "perCapita": 4591,
+   "instituicao": "Prefeitura Municipal de Manaus - AM"
+  },
+  "Maranhão": {
+   "receita": 32541900218.57,
+   "perCapita": 4549,
+   "instituicao": "Governo do Estado do Maranhão"
+  },
+  "Mato Grosso": {
+   "receita": 57323277521.05,
+   "perCapita": 16069,
+   "instituicao": "Governo do Estado do Mato Grosso"
+  },
+  "Mato Grosso do Sul": {
+   "receita": 35080389219.79,
+   "perCapita": 12356,
+   "instituicao": "Governo do Estado do Mato Grosso do Sul"
+  },
+  "Minas Gerais": {
+   "receita": 148380936899.4,
+   "perCapita": 6930,
+   "instituicao": "Governo do Estado de Minas Gerais"
+  },
+  "Natal": {
+   "receita": 4339201717.24,
+   "perCapita": 4839,
+   "instituicao": "Prefeitura Municipal de Natal - RN"
+  },
+  "Palmas": {
+   "receita": 2311830159.88,
+   "perCapita": 7378,
+   "instituicao": "Prefeitura Municipal de Palmas - TO"
+  },
+  "Pará": {
+   "receita": 55566291695.34,
+   "perCapita": 6331,
+   "instituicao": "Governo do Estado do Pará"
+  },
+  "Paraíba": {
+   "receita": 24268323062.82,
+   "perCapita": 5978,
+   "instituicao": "Governo do Estado da Paraíba"
+  },
+  "Paraná": {
+   "receita": 97577150653.94,
+   "perCapita": 8414,
+   "instituicao": "Governo do Estado do Paraná"
+  },
+  "Pernambuco": {
+   "receita": 55885378060.57,
+   "perCapita": 5776,
+   "instituicao": "Governo do Estado de Pernambuco"
+  },
+  "Piauí": {
+   "receita": 24653277851.52,
+   "perCapita": 7495,
+   "instituicao": "Governo do Estado do Piauí"
+  },
+  "Porto Alegre": {
+   "receita": 11407754157.14,
+   "perCapita": 7643,
+   "instituicao": "Prefeitura Municipal de Porto Alegre - RS"
+  },
+  "Porto Velho": {
+   "receita": 2594364228.8,
+   "perCapita": 4726,
+   "instituicao": "Prefeitura Municipal de Porto Velho - RO"
+  },
+  "Recife": {
+   "receita": 8655868780.08,
+   "perCapita": 5211,
+   "instituicao": "Prefeitura Municipal de Recife - PE"
+  },
+  "Rio Branco": {
+   "receita": 2065774617.62,
+   "perCapita": 4925,
+   "instituicao": "Prefeitura Municipal de Rio Branco - AC"
+  },
+  "Rio de Janeiro (capital)": {
+   "receita": 44410721692.1,
+   "perCapita": 6555,
+   "instituicao": "Prefeitura Municipal do Rio de Janeiro - RJ"
+  },
+  "Rio de Janeiro (estado)": {
+   "receita": 129339037100.34,
+   "perCapita": 7406,
+   "instituicao": "Governo do Estado do Rio de Janeiro"
+  },
+  "Rio Grande do Norte": {
+   "receita": 25079360939.32,
+   "perCapita": 7043,
+   "instituicao": "Governo do Estado do Rio Grande do Norte"
+  },
+  "Rio Grande do Sul": {
+   "receita": 105082865100.4,
+   "perCapita": 9164,
+   "instituicao": "Governo do Estado do Rio Grande do Sul"
+  },
+  "Rondônia": {
+   "receita": 18589975792.52,
+   "perCapita": 10241,
+   "instituicao": "Governo do Estado de Rondônia"
+  },
+  "Roraima": {
+   "receita": 9315070797.76,
+   "perCapita": 14271,
+   "instituicao": "Governo do Estado de Roraima"
+  },
+  "Salvador": {
+   "receita": 11397026220.95,
+   "perCapita": 3930,
+   "instituicao": "Prefeitura Municipal de Salvador - BA"
+  },
+  "Santa Catarina": {
+   "receita": 63607601503.52,
+   "perCapita": 8668,
+   "instituicao": "Governo do Estado de Santa Catarina"
+  },
+  "São Luís": {
+   "receita": 5628227416.84,
+   "perCapita": 5044,
+   "instituicao": "Prefeitura Municipal de São Luís - MA"
+  },
+  "São Paulo (capital)": {
+   "receita": 103907650083.66,
+   "perCapita": 8382,
+   "instituicao": "Prefeitura Municipal de São Paulo - SP"
+  },
+  "São Paulo (estado)": {
+   "receita": 361144478534.65,
+   "perCapita": 7742,
+   "instituicao": "Governo do Estado de São Paulo"
+  },
+  "Sergipe": {
+   "receita": 17942834356.95,
+   "perCapita": 7673,
+   "instituicao": "Governo do Estado de Sergipe"
+  },
+  "Teresina": {
+   "receita": 4932274800.56,
+   "perCapita": 5662,
+   "instituicao": "Prefeitura Municipal de Teresina - PI"
+  },
+  "Tocantins": {
+   "receita": 22193304828.25,
+   "perCapita": 13807,
+   "instituicao": "Governo do Estado do Tocantins"
+  },
+  "Vitória": {
+   "receita": 3445491143.05,
+   "perCapita": 9324,
+   "instituicao": "Prefeitura Municipal de Vitória - ES"
+  }
+ }
+}

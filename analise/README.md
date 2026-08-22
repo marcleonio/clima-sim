@@ -18,6 +18,8 @@ O painel público mostra só a nota. A evidência já existe; falta entregá-la.
 
 | Arquivo | O que é |
 |---|---|
+| `ingerir-siconfi.mjs` | Busca a receita realizada de cada ente no SICONFI e funde no índice. Cache versionado em `dados/financas-siconfi.json`; a re-execução só consulta o que falta |
+| `gerar-mapa.mjs` | Converte a malha do IBGE em caminhos SVG. Confere que cada capital cai dentro do polígono do próprio estado |
 | `gerar-dados.mjs` | **Gerador dos dados do frontend** — lê o CSV oficial e emite `indice.json` e `dossies/*.json`. Confere o resultado contra o que já estava publicado e falha se divergir |
 | `01-exploracao-e-tese.ipynb` | Notebook executado que prova a tese, célula a célula, sobre o CSV real |
 | `gerar_notebook.py` | Script que regenera o notebook (fonte de verdade — edite aqui, não no `.ipynb`) |
@@ -33,8 +35,14 @@ O painel público mostra só a nota. A evidência já existe; falta entregá-la.
 Os dados que o frontend consome:
 
 ```bash
-node analise/gerar-dados.mjs
+node analise/gerar-dados.mjs     # índice + dossiês, a partir do CSV oficial
+node analise/gerar-mapa.mjs      # caminhos SVG do mapa, a partir da malha do IBGE
+node analise/ingerir-siconfi.mjs # receita realizada, do Tesouro Nacional
 ```
+
+A ordem importa: `ingerir-siconfi` funde no `indice.json` que `gerar-dados`
+produz, então rodar `gerar-dados` depois apaga as finanças e exige rodar a
+ingestão de novo (que sai do cache, sem custo de rede).
 
 O notebook da tese:
 

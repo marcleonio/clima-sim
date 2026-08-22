@@ -31,6 +31,15 @@ export interface ResumoComponente extends ResumoEixo {
   d: number[];
 }
 
+/** Capacidade fiscal do ente, do SICONFI. Ausente quando o ente não publicou a DCA. */
+export interface FinancasEnte {
+  /** Receita bruta realizada no exercício, em reais. */
+  receita: number;
+  /** Receita por habitante, arredondada. Null quando a população é desconhecida. */
+  perCapita: number | null;
+  exercicio: number;
+}
+
 /** O que o índice sabe sobre um ente: tudo, menos os pareceres. */
 export interface EnteResumo {
   tipo: string;
@@ -43,6 +52,12 @@ export interface EnteResumo {
   rank: number;
   eixos: Record<string, ResumoEixo>;
   comps: Record<string, ResumoComponente>;
+  /**
+   * "Não destinou orçamento ao clima" significa coisas diferentes num ente que
+   * arrecada R$ 361 bilhões e num que arrecada R$ 2,5 bilhões. Este campo
+   * distingue "não gastou" de "não tinha".
+   */
+  fin?: FinancasEnte;
 }
 
 /** Um requisito com ação parcial documentada — já saiu do zero. */
@@ -67,6 +82,7 @@ export interface Indice {
       eixos: Record<string, MediaNacional>;
       comps: Record<string, MediaNacional>;
     };
+    financas?: { fonte: string; exercicio: number; extraidoEm: string; cobertura: number };
   };
   entes: Record<string, EnteResumo>;
 }

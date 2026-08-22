@@ -1,7 +1,9 @@
 import { AlertTriangle, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatarNumero } from "@/lib/achados";
 import type { Severidade, Veredito as DadosVeredito } from "@/lib/achados";
+import type { FinancasEnte } from "@/lib/dados";
 
 /**
  * A resposta antes da grade.
@@ -36,7 +38,14 @@ const TOM: Record<Severidade, { borda: string; fundo: string; tinta: string }> =
   },
 };
 
-export function Veredito({ veredito }: { veredito: DadosVeredito }) {
+export function Veredito({
+  veredito,
+  financas,
+}: {
+  veredito: DadosVeredito;
+  /** Capacidade fiscal, quando o ente publicou a DCA. */
+  financas?: FinancasEnte | undefined;
+}) {
   const { titulo, contexto, alerta, severidade } = veredito;
   const Icone = ICONE[severidade];
   const tom = TOM[severidade];
@@ -58,6 +67,29 @@ export function Veredito({ veredito }: { veredito: DadosVeredito }) {
           <p className="mt-2 max-w-prose text-pretty text-base leading-relaxed text-foreground/80">
             {contexto}
           </p>
+
+          {/*
+            O eixo Financiamento é o mais frágil do país. "Não destinou
+            orçamento ao clima" significa coisas diferentes num ente que
+            arrecada bilhões e num que arrecada milhões — este número é o que
+            separa "não gastou" de "não tinha".
+          */}
+          {financas && (
+            <p className="mt-3 text-sm text-foreground/70">
+              Arrecadou{" "}
+              <strong className="font-semibold tabular-nums text-foreground">
+                R$ {formatarNumero(Math.round(financas.receita / 1_000_000))} milhões
+              </strong>{" "}
+              em {financas.exercicio}
+              {financas.perCapita != null && (
+                <>
+                  {" "}
+                  — R$ {formatarNumero(financas.perCapita)} por habitante
+                </>
+              )}
+              . <span className="text-muted-foreground">Fonte: SICONFI / Tesouro Nacional.</span>
+            </p>
+          )}
 
           {alerta && (
             <p

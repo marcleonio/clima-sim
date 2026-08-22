@@ -360,7 +360,7 @@ function AchadosPage() {
               mediaNacionalGeral={META.nacional.mat}
             />
 
-            <Veredito veredito={veredito} />
+            <Veredito veredito={veredito} financas={ENTES[enteAtivo]?.fin} />
 
             <TrajetoriaPainel
               nomeEnte={enteAtivo}
