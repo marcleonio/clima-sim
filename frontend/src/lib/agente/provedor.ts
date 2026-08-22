@@ -34,7 +34,23 @@ const MAXIMO_DE_VOLTAS = 8;
 const SAIDA_MAXIMA = 1100;
 
 /** Quantas vezes reagendar diante de um 429 antes de desistir. */
-const TENTATIVAS_NO_LIMITE = 3;
+const TENTATIVAS_NO_LIMITE = 4;
+
+/*
+ * Teto do retorno de UMA ferramenta, em caracteres.
+ *
+ * Este é o gargalo de verdade, e não o prompt do sistema. `listar_achados` em
+ * Boa Vista devolve 43 pareceres de auditoria de ~800 caracteres cada: 34 mil
+ * caracteres, perto de 9 mil tokens numa tacada — mais que o orçamento inteiro
+ * do minuto no nível gratuito da Groq. O laço morria em 429 de forma
+ * intermitente, dependendo de qual ferramenta o modelo escolhia.
+ *
+ * 6.000 caracteres (~1.500 tokens) deixa passar a resposta completa da grande
+ * maioria das ferramentas e corta só as que despejam parecer em massa. O corte
+ * vai ANUNCIADO: o modelo precisa saber que viu um pedaço, senão ele responde
+ * como se tivesse visto tudo.
+ */
+const LIMITE_DE_RESULTADO = 6000;
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -71,7 +87,24 @@ async function executar(nome: string, argumentos: unknown, usadas: string[]): Pr
 
   usadas.push(nome);
   try {
-    return JSON.stringify(await alvo(argumentos));
+    const bruto = JSON.stringify(await alvo(argumentos));
+    if (bruto.length <= LIMITE_DE_RESULTADO) return bruto;
+
+    /*
+     * Cortar no meio do JSON produziria texto inválido, e um modelo diante de
+     * JSON quebrado inventa o resto. Então o corte devolve um objeto VÁLIDO que
+     * diz o que aconteceu e o que fazer.
+     */
+    return JSON.stringify({
+      truncado: true,
+      ferramenta: nome,
+      motivo: `O resultado tem ${bruto.length} caracteres e o limite por consulta é ${LIMITE_DE_RESULTADO}.`,
+      instrucao:
+        "Você está vendo apenas o começo. NÃO responda como se tivesse o conjunto completo. " +
+        "Refaça a consulta com um recorte menor (um componente específico, ou apenasRiscoDeVida) " +
+        "ou diga ao usuário que o conjunto é grande demais e peça que ele especifique.",
+      inicioDoResultado: bruto.slice(0, LIMITE_DE_RESULTADO),
+    });
   } catch (erro) {
     // Erro de ferramenta volta como DADO: o modelo precisa poder dizer que
     // aquela consulta falhou, em vez de o laço inteiro morrer.
@@ -141,7 +174,10 @@ async function comGroq(
 
       const aviso = await resposta.text();
       if (tentativa === TENTATIVAS_NO_LIMITE) {
-        throw new Error(`Groq 429 após ${tentativa} tentativas: ${aviso.slice(0, 200)}`);
+        // Marcado para o servidor distinguir "acabou a cota do minuto" de
+        // "quebrou": o primeiro é espera, o segundo é defeito, e dizer a mesma
+        // coisa para os dois deixa o usuário sem saber se adianta tentar.
+        throw new Error(`LIMITE_DE_TAXA: ${aviso.slice(0, 200)}`);
       }
       await dormir(esperaSugerida(aviso, tentativa));
     }
@@ -153,6 +189,7 @@ async function comGroq(
 
     const corpo = (await resposta.json()) as {
       choices?: {
+        finish_reason?: string;
         message?: {
           content?: string | null;
           tool_calls?: { id: string; function: { name: string; arguments: string } }[];
@@ -160,16 +197,31 @@ async function comGroq(
       }[];
     };
 
-    const mensagem = corpo.choices?.[0]?.message;
+    const escolha = corpo.choices?.[0];
+    const mensagem = escolha?.message;
     if (!mensagem) throw new Error("Groq devolveu resposta sem mensagem");
 
     const chamadas = mensagem.tool_calls ?? [];
     if (!chamadas.length) {
-      return {
-        texto: (mensagem.content ?? "").trim(),
-        ferramentasUsadas: [...new Set(usadas)],
-        origem: `groq/${modelo}`,
-      };
+      const texto = (mensagem.content ?? "").trim();
+
+      /*
+       * Os modelos gpt-oss gastam parte do orçamento de saída em `reasoning`,
+       * que não aparece em `content`. Quando o teto é apertado, a resposta volta
+       * com content VAZIO e finish_reason "length" — silenciosamente. Sem esta
+       * guarda o usuário via um balão em branco.
+       */
+      if (!texto && escolha?.finish_reason === "length") {
+        return {
+          texto:
+            "A resposta foi cortada antes de sair. Faça uma pergunta mais direta — por exemplo, " +
+            "citando um ente ou um componente específico.",
+          ferramentasUsadas: [...new Set(usadas)],
+          origem: `groq/${modelo}`,
+        };
+      }
+
+      return { texto, ferramentasUsadas: [...new Set(usadas)], origem: `groq/${modelo}` };
     }
 
     historico.push(mensagem as unknown as Record<string, unknown>);
@@ -269,6 +321,13 @@ export function escolherProvedor(ambiente: Record<string, string | undefined>): 
     return {
       provedor: "groq",
       chave: groq,
+      /*
+       * 120b e não 20b: o menor é mais barato e mais rápido, mas NÃO chama
+       * ferramenta de forma confiável — diante de "quantos itens de Boa Vista
+       * estão sem progresso?" ele pede esclarecimento em vez de consultar. Num
+       * agente cuja regra é não produzir fato sem ferramenta, um modelo que não
+       * chama ferramenta não responde nada.
+       */
       modelo: ambiente["GROQ_MODELO"] ?? "openai/gpt-oss-120b",
     };
   }

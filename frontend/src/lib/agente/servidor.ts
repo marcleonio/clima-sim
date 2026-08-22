@@ -107,7 +107,7 @@ export interface RespostaAgente {
   ferramentasUsadas: string[];
   /** Provedor e modelo que redigiram — a resposta é rastreável. */
   origem?: string;
-  indisponivel?: "sem_chave" | "erro";
+  indisponivel?: "sem_chave" | "limite" | "erro";
   detalhe?: string;
 }
 
@@ -166,13 +166,31 @@ export const perguntarAoAgente = createServerFn({ method: "POST" })
         origem: resultado.origem,
       };
     } catch (erro) {
+      const detalhe = erro instanceof Error ? erro.message : String(erro);
+
+      /*
+       * "Acabou a cota do minuto" e "quebrou" pedem reações opostas do usuário:
+       * na primeira vale esperar dez segundos, na segunda não adianta insistir.
+       * Dizer a mesma frase para as duas deixa a pessoa sem saber o que fazer.
+       */
+      if (detalhe.startsWith("LIMITE_DE_TAXA")) {
+        return {
+          texto:
+            "O limite de uso do modelo por minuto foi atingido. Espere alguns segundos e pergunte " +
+            "de novo — perguntas mais específicas consomem menos e falham menos.",
+          ferramentasUsadas: [],
+          indisponivel: "limite",
+          detalhe,
+        };
+      }
+
       return {
         texto:
           "O assistente não conseguiu responder agora. As consultas diretas ao painel continuam " +
           "funcionando — elas não dependem da API.",
         ferramentasUsadas: [],
         indisponivel: "erro",
-        detalhe: erro instanceof Error ? erro.message : String(erro),
+        detalhe,
       };
     }
   });

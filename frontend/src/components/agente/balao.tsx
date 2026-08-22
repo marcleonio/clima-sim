@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUp, Sparkles, X } from "lucide-react";
 
 import { Mascote, type EstadoMascote } from "@/components/agente/mascote";
+import { RespostaFormatada } from "@/components/agente/resposta";
 import { Button } from "@/components/ui/button";
 import { PERGUNTAS_INICIAIS, type Insight } from "@/lib/agente/insights";
 import { perguntarAoAgente } from "@/lib/agente/servidor";
@@ -23,6 +24,8 @@ interface Mensagem {
   papel: "usuario" | "assistente";
   texto: string;
   ferramentas?: string[];
+  /** Provedor e modelo que redigiram — a resposta é rastreável. */
+  origem?: string;
   indisponivel?: boolean;
 }
 
@@ -89,6 +92,7 @@ export function BalaoAgente({
             papel: "assistente",
             texto: resposta.texto,
             ferramentas: resposta.ferramentasUsadas,
+            ...(resposta.origem ? { origem: resposta.origem } : {}),
             ...(resposta.indisponivel ? { indisponivel: true } : {}),
           },
         ]);
@@ -218,11 +222,29 @@ export function BalaoAgente({
               m.indisponivel && "border-[var(--sev-atencao)]/50 bg-[var(--sev-atencao-bg)]",
             )}
           >
-            <p className="whitespace-pre-wrap">{m.texto}</p>
+            {/* markdown do modelo vira nós React; nunca innerHTML */}
+            {m.papel === "assistente" && !m.indisponivel ? (
+              <RespostaFormatada texto={m.texto} />
+            ) : (
+              <p className="whitespace-pre-wrap">{m.texto}</p>
+            )}
             {m.ferramentas && m.ferramentas.length > 0 && (
-              <p className="mt-2 border-t pt-1.5 font-mono text-[11px] text-muted-foreground">
-                consultou: {m.ferramentas.join(", ")}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1 border-t pt-2">
+                <span className="text-xs text-muted-foreground">consultou</span>
+                {m.ferramentas.map((f) => (
+                  <span
+                    key={f}
+                    className="rounded bg-muted px-1.5 py-px font-mono text-xs text-muted-foreground"
+                  >
+                    {f}
+                  </span>
+                ))}
+                {m.origem && (
+                  <span className="ml-auto font-mono text-xs text-muted-foreground/70" title="Provedor e modelo que redigiram">
+                    {m.origem}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         ))}
