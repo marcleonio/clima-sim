@@ -1,23 +1,22 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 
-import {
-  descreverTrajetoria,
-  posicaoProjetada,
-  projetar,
-  type EnteParaTrajetoria,
-} from "@/lib/trajetoria";
+import { TrajetoriaLinha } from "@/components/graficos/formas";
+import { posicaoProjetada, projetar, type EnteParaTrajetoria } from "@/lib/trajetoria";
 
 /**
  * O que acontece se o ente agir — no lugar do simulador.
  *
- * Não há nada para arrastar e nenhum parâmetro a estimar: a projeção é
- * consequência direta da seleção de achados que o usuário já faz para montar a
- * peça. Mesma ação, informação a mais.
+ * Nenhum parâmetro é estimado: a conta é a da escala oficial (quatro degraus,
+ * 0 · 33 · 67 · 100%) e qualquer pessoa reproduz com a planilha na mão. Nada
+ * aqui fala de dinheiro — o produto não tem dado para dizer quanto custa sair
+ * de um degrau, e fingir que tem foi o erro removido junto com o simulador.
  *
- * A conta é a da escala oficial (quatro degraus, 0 · 1/3 · 2/3 · 1) e qualquer
- * pessoa reproduz com a planilha na mão. Nada aqui fala de dinheiro: o produto
- * não tem dado para dizer quanto custa sair de um degrau.
+ * O controle deslizante entrou na etapa E10. Antes, a projeção só espelhava a
+ * seleção feita para montar a peça, o que respondia "e se eu agir nestes?" mas
+ * não "e se eu agir em quantos?". Ele parte da seleção do usuário e volta a
+ * segui-la sempre que ela muda — arrastar não desfaz o que ele escolheu na
+ * lista, só explora a partir dali.
  */
 export function TrajetoriaPainel({
   nomeEnte,
@@ -29,21 +28,22 @@ export function TrajetoriaPainel({
   nomeEnte: string;
   ente: EnteParaTrajetoria;
   rank: number;
-  /** Quantos achados estão marcados. Zero significa "todos". */
+  /** Quantos itens estão marcados. Zero significa "todos". */
   selecionados: number;
   taxasDosOutros: number[];
 }) {
-  const requisitos = selecionados > 0 ? selecionados : ente.lac;
+  const partida = selecionados > 0 ? selecionados : ente.lac;
+  const [movidos, setMovidos] = useState(partida);
 
-  const { trajetoria, posicao, frase } = useMemo(() => {
-    const t = projetar(ente, requisitos, 1);
-    const p = posicaoProjetada(ente, t, taxasDosOutros, rank);
-    return { trajetoria: t, posicao: p, frase: descreverTrajetoria(nomeEnte, t, p) };
-  }, [ente, requisitos, taxasDosOutros, rank, nomeEnte]);
+  // A seleção da lista continua mandando: mexer nela reposiciona o controle.
+  useEffect(() => setMovidos(partida), [partida]);
+
+  const { trajetoria, posicao } = useMemo(() => {
+    const t = projetar(ente, movidos, 1);
+    return { trajetoria: t, posicao: posicaoProjetada(ente, t, taxasDosOutros, rank) };
+  }, [ente, movidos, taxasDosOutros, rank]);
 
   if (ente.lac === 0) return null;
-
-  const largura = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
 
   return (
     <section aria-labelledby="trajetoria" className="rounded-xl border bg-card p-4 shadow-sm">
@@ -51,51 +51,32 @@ export function TrajetoriaPainel({
         <TrendingUp className="size-4 text-primary" aria-hidden />
         Trajetória de regularização
       </h2>
-
-      <p className="mt-2 max-w-prose text-pretty text-sm leading-relaxed text-foreground/85">
-        {frase}
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Arraste para ver quantos itens fazem diferença em {nomeEnte}.
       </p>
 
-      {/* a barra mostra o movimento, não um cenário inventado */}
-      <div className="mt-4">
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="absolute inset-y-0 left-0 bg-primary/35"
-            style={{ width: largura(trajetoria.projetado) }}
-            aria-hidden
-          />
-          <div
-            className="absolute inset-y-0 left-0 bg-primary"
-            style={{ width: largura(trajetoria.atual) }}
-            aria-hidden
-          />
-        </div>
-        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-          <span className="text-muted-foreground">
-            Índice hoje{" "}
-            <strong className="font-semibold tabular-nums text-foreground">
-              {trajetoria.atual.toFixed(1).replace(".", ",")}%
-            </strong>
-          </span>
-          <span className="text-muted-foreground">
-            Projetado{" "}
-            <strong className="font-semibold tabular-nums text-primary">
-              {trajetoria.projetado.toFixed(1).replace(".", ",")}%
-            </strong>{" "}
-            <span className="tabular-nums">
-              (+{trajetoria.ganho.toFixed(1).replace(".", ",")})
-            </span>
-          </span>
-        </div>
+      <div className="mt-3">
+        <TrajetoriaLinha
+          atual={trajetoria.atual}
+          lacunas={ente.lac}
+          total={ente.tot}
+          escolhidos={movidos}
+          onEscolher={setMovidos}
+          posicaoAtual={posicao.atual}
+          posicaoProjetada={posicao.projetada}
+          totalDeEntes={posicao.total}
+        />
       </div>
 
-      <dl className="mt-4 grid grid-cols-3 gap-4 border-t pt-3 text-sm">
+      <dl className="mt-3 grid grid-cols-3 gap-4 border-t pt-3 text-sm">
         <div>
-          <dt className="text-xs text-muted-foreground">Requisitos movidos</dt>
-          <dd className="mt-0.5 font-semibold tabular-nums">{trajetoria.requisitos}</dd>
+          <dt className="text-xs text-muted-foreground">Ganho</dt>
+          <dd className="mt-0.5 font-semibold tabular-nums text-[var(--sev-ok)]">
+            +{trajetoria.ganho.toFixed(1).replace(".", ",")} p.p.
+          </dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Lacunas restantes</dt>
+          <dt className="text-xs text-muted-foreground">Ainda sem progresso</dt>
           <dd className="mt-0.5 font-semibold tabular-nums">{trajetoria.lacunasRestantes}</dd>
         </div>
         <div>
@@ -108,8 +89,9 @@ export function TrajetoriaPainel({
       </dl>
 
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        Aritmética da escala oficial da metodologia — quatro degraus por requisito, índice igual à
-        média. Não é previsão nem modelo estatístico, e não estima custo.
+        A reta é o argumento: como a pontuação é a média das notas dos itens, cada item
+        regularizado vale exatamente o mesmo — não há atalho nem rendimento decrescente. Aritmética
+        da escala oficial, não previsão, e sem nenhuma estimativa de custo.
       </p>
     </section>
   );

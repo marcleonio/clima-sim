@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BalaoAgente } from "@/components/agente/balao";
 import { degrauDeficit } from "@/components/achado/componente-heatmap";
+import {
+  BarraDegraus,
+  BarrasProporcionais,
+  FaixaDistribuicao,
+} from "@/components/graficos/formas";
 import { BarraFiltros } from "@/components/painel/barra-filtros";
 import { LegendaMapa, MapaBrasil } from "@/components/painel/mapa-brasil";
 import { PainelEnte } from "@/components/painel/painel-ente";
@@ -17,6 +22,8 @@ import {
   type PerfilPriorizacao,
 } from "@/lib/prioridade";
 import {
+  distribuicaoDeMaturidade,
+  entesSemLacuna,
   filtrarTerritorio,
   lacunasPorComponente,
   populacaoSobLacuna,
@@ -153,6 +160,8 @@ function PainelPage() {
   const popP2 = useMemo(() => populacaoSobLacuna(ENTES, "P2"), []);
 
   const insights = useMemo(() => insightsDoRecorte(selecionados), [selecionados]);
+  const distribuicao = useMemo(() => distribuicaoDeMaturidade(selecionados), [selecionados]);
+  const semPendencia = useMemo(() => entesSemLacuna(selecionados), [selecionados]);
 
   /**
    * O ente sob o cursor, em qualquer componente da tela.
@@ -285,39 +294,100 @@ function PainelPage() {
             mediaNacional={META.nacional.mat}
           />
 
+          {/*
+            Cada número tem um trabalho diferente, e o trabalho escolhe a forma.
+            Quatro cartões idênticos com quatro números grandes era o que não
+            fazer: uma parte-no-todo não se lê como uma posição na distribuição.
+          */}
           <section
             aria-label="Números do recorte"
-            className="rounded-xl border bg-card p-4 shadow-sm"
+            className="space-y-3.5 overflow-y-auto rounded-xl border bg-card p-4 shadow-sm"
           >
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <Numero
-                rotulo="Itens sem progresso"
-                bruto={resumo.lacunas}
-                formatar={(v) => formatarNumero(Math.round(v))}
-                nota={`de ${formatarNumero(resumo.requisitos)}`}
-                tom="critico"
-              />
-              <Numero
-                rotulo="Pontuação média"
-                bruto={resumo.maturidade}
-                casas={1}
-                formatar={(v) => formatarPercentual(v)}
-                nota={`país ${formatarPercentual(META.nacional.mat)}`}
-              />
-              <Numero
-                rotulo="Sem itens pendentes"
-                bruto={resumo.semLacuna}
-                formatar={(v) => String(Math.round(v))}
-                nota={`de ${resumo.entes}`}
-                tom="ok"
-              />
-              <Numero
-                rotulo="Sob jurisdição"
-                bruto={resumo.populacao}
-                formatar={(v) => formatarNumero(Math.round(v))}
-                nota="estados e DF"
-              />
-            </dl>
+            <div>
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Itens por classificação
+                </h3>
+                <p className="text-sm">
+                  <strong className="tabular-nums text-[var(--sev-critico)]">
+                    <Numero bruto={resumo.lacunas} formatar={(v) => formatarNumero(Math.round(v))} />
+                  </strong>{" "}
+                  <span className="text-muted-foreground">
+                    sem progresso, de {formatarNumero(resumo.requisitos)}
+                  </span>
+                </p>
+              </div>
+              <div className="mt-1.5">
+                <BarraDegraus degraus={resumo.degraus} />
+              </div>
+            </div>
+
+            <div className="border-t pt-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Pontuação dos entes
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Cada traço é um ente. Tracejado: média nacional.
+              </p>
+              <div className="mt-1.5">
+                <FaixaDistribuicao
+                  pontos={distribuicao}
+                  media={resumo.maturidade}
+                  referencia={META.nacional.mat}
+                  realcado={realcado}
+                  onRealcar={setRealcado}
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                População sob jurisdição
+              </h3>
+              <div className="mt-1.5">
+                <BarrasProporcionais
+                  total={resumo.populacao}
+                  series={[
+                    {
+                      rotulo: "com item sem progresso em adaptação (P2)",
+                      valor: popP2,
+                      tom: "critico",
+                    },
+                    {
+                      rotulo: "com item sem progresso em defesa civil (P5)",
+                      valor: popP5,
+                      tom: "critico",
+                    },
+                  ]}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Mede lacuna de governança, não risco físico: “vive sob jurisdição de ente com item
+                sem progresso”, nunca “está em risco”.
+              </p>
+            </div>
+
+            {semPendencia.length > 0 && (
+              <div className="border-t pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sem nenhum item pendente
+                </h3>
+                {/* três nomes valem mais que o número três: são os precedentes */}
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {semPendencia.map((nome) => (
+                    <li key={nome}>
+                      <Link
+                        to="/achados"
+                        search={{ ente: nome }}
+                        className="inline-flex min-h-9 items-center rounded-full border border-[var(--sev-ok)]/40 bg-[var(--sev-ok-bg)] px-3 text-xs font-semibold text-[var(--sev-ok)]"
+                      >
+                        {nome}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         </div>
       </div>
@@ -346,28 +416,7 @@ function PainelPage() {
         </section>
 
         <div className="space-y-4">
-          <section
-            aria-label="Itens que protegem vidas"
-            className="rounded-xl border-2 border-[var(--sev-critico)]/40 bg-[var(--sev-critico-bg)] p-4"
-          >
-            <p className="text-sm font-bold text-[var(--sev-critico)]">
-              Itens que protegem vidas
-            </p>
-            <dl className="mt-2 space-y-2 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Sob jurisdição com item sem progresso em adaptação (P2)</dt>
-                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP2)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Sob jurisdição com item sem progresso em defesa civil (P5)</dt>
-                <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP5)}</dd>
-              </div>
-            </dl>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Mede lacuna de governança, não risco físico: a formulação é “vive sob jurisdição de
-              ente com item sem progresso”, nunca “está em risco”.
-            </p>
-          </section>
+
 
           <section
             aria-labelledby="barras-componentes"
@@ -433,36 +482,21 @@ function PainelPage() {
  * mudança durante a própria transição, sem o leitor precisar ter memorizado o
  * valor anterior.
  */
+/**
+ * Um número que interpola quando o filtro muda.
+ *
+ * Anima-se o que MUDOU DE VALOR: ver 640 correr até 245 comunica a magnitude da
+ * mudança durante a própria transição, sem o leitor precisar ter memorizado o
+ * valor anterior.
+ */
 function Numero({
-  rotulo,
   bruto,
   formatar,
   casas = 0,
-  nota,
-  tom,
 }: {
-  rotulo: string;
   bruto: number;
   formatar: (valor: number) => string;
   casas?: number;
-  nota: string;
-  tom?: "critico" | "ok";
 }) {
-  const animado = useNumeroAnimado(bruto, casas);
-
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{rotulo}</dt>
-      <dd
-        className={cn(
-          "text-2xl font-bold leading-none tabular-nums",
-          tom === "critico" && "text-[var(--sev-critico)]",
-          tom === "ok" && "text-[var(--sev-ok)]",
-        )}
-      >
-        {formatar(animado)}
-      </dd>
-      <dd className="mt-0.5 text-xs text-muted-foreground">{nota}</dd>
-    </div>
-  );
+  return <>{formatar(useNumeroAnimado(bruto, casas))}</>;
 }

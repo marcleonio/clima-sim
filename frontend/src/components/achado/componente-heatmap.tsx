@@ -1,3 +1,4 @@
+import { PerfilDivergente } from "@/components/graficos/formas";
 import { cn } from "@/lib/utils";
 import {
   amplitudeComponentes,
@@ -168,71 +169,6 @@ function Celula({
   );
 }
 
-/** Versão compacta: quando não há variação, a grade não tem o que mostrar. */
-function ListaCompacta({
-  celulas,
-  filtro,
-  onSelecionar,
-}: {
-  celulas: CelulaComponente[];
-  filtro: string | null;
-  onSelecionar: ((c: string) => void) | undefined;
-}) {
-  return (
-    <ul className="divide-y rounded-lg border">
-      {celulas.map((celula) => {
-        const degrau = degrauDeficit(celula.maturidade);
-        const selecionado = filtro === celula.c;
-        const conteudo = (
-          <>
-            <span
-              className="size-3 flex-none rounded-sm"
-              style={{ background: `var(--calor-${degrau})` }}
-              aria-hidden
-            />
-            <span className="w-8 flex-none font-mono text-xs font-bold text-muted-foreground">
-              {celula.c}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{celula.nome}</span>
-            {celula.lacunas > 0 && (
-              <span className="flex-none text-xs font-semibold text-[var(--sev-critico)]">
-                {celula.lacunas}/{celula.total}
-              </span>
-            )}
-            <span className="w-10 flex-none text-right text-sm font-bold tabular-nums">
-              {Math.round(celula.maturidade)}
-              <span className="text-xs font-semibold opacity-70">%</span>
-            </span>
-          </>
-        );
-
-        // Mesma regra da grade: sem lacuna, não há o que filtrar.
-        const filtravel = onSelecionar && celula.lacunas > 0;
-
-        return (
-          <li key={celula.c}>
-            {filtravel ? (
-              <button
-                type="button"
-                onClick={() => onSelecionar(celula.c)}
-                aria-pressed={selecionado}
-                className={cn(
-                  "flex min-h-11 w-full cursor-pointer items-center gap-2.5 px-3 text-left transition-colors hover:bg-accent/50",
-                  selecionado && "bg-accent",
-                )}
-              >
-                {conteudo}
-              </button>
-            ) : (
-              <span className="flex min-h-11 w-full items-center gap-2.5 px-3">{conteudo}</span>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 export function ComponenteHeatmap({
   ente,
   nomes,
@@ -325,7 +261,26 @@ export function ComponenteHeatmap({
         </div>
       )}
 
-      {usarGrade ? (
+      {/*
+        Quando a variação entre componentes é pequena, quinze cartões dizem
+        todos a mesma coisa. O perfil divergente resolve isso mostrando a
+        DISTÂNCIA para o país em vez do valor absoluto: o eixo zero faz o
+        trabalho que quinze textos "▲ 8 vs país" faziam, e o que sobra na tela
+        é a forma da fragilidade do ente.
+      */}
+      {!usarGrade ? (
+        <PerfilDivergente
+          itens={celulas.map((c) => ({
+            c: c.c,
+            nome: c.nome,
+            delta: c.delta,
+            maturidade: c.maturidade,
+            lacunas: c.lacunas,
+          }))}
+          selecionado={filtro ?? null}
+          {...(selecionar ? { onSelecionar: selecionar } : {})}
+        />
+      ) : (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {celulas.map((c) => (
             <Celula
@@ -336,8 +291,6 @@ export function ComponenteHeatmap({
             />
           ))}
         </ul>
-      ) : (
-        <ListaCompacta celulas={celulas} filtro={filtro} onSelecionar={selecionar} />
       )}
     </section>
   );
