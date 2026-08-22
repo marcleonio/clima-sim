@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { degrauDeficit } from "@/components/achado/componente-heatmap";
 import { formatarNumero, formatarPercentual } from "@/lib/achados";
 import type { EnteResumo } from "@/lib/dados";
+import { DEGRAUS_LEGENDA } from "@/components/graficos/legenda-pontuacao";
 import { SIGLA_UF, ufDe } from "@/lib/territorio";
 import { cn } from "@/lib/utils";
 import mapaBruto from "@/data/mapa-brasil.json";
@@ -251,19 +252,42 @@ export function MapaBrasil({
   );
 }
 
-/** Legenda da rampa. Fica fora do SVG para poder quebrar linha no celular. */
+/**
+ * Legenda da rampa, com cada cor amarrada à faixa que representa.
+ *
+ * Antes era um gradiente entre "menor pontuação" e "mais": o leitor via que
+ * escuro é pior, mas não sabia o que cada tom significa na escala oficial. Cor
+ * sem vínculo textual é decoração, não informação.
+ *
+ * Cada degrau agora declara a faixa, e os dois rótulos do manual — desafio até
+ * 33%, ponto forte a partir de 67% — aparecem escritos.
+ */
 export function LegendaMapa() {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-      <span className="flex items-center gap-2">
-        <span>menor pontuação</span>
-        <span className="flex overflow-hidden rounded-sm" aria-hidden>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <span key={i} className="block size-3.5" style={{ background: `var(--calor-${i})` }} />
-          ))}
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {DEGRAUS_LEGENDA.map((d) => (
+          <span
+            key={d.passo}
+            className="flex items-center gap-1"
+            title={`${d.faixa} — ${d.rotulo}. ${d.explica}`}
+          >
+            <span
+              className="size-3 flex-none rounded-[2px]"
+              style={{ background: `var(--calor-${d.passo})` }}
+              aria-hidden
+            />
+            <span className={cn("tabular-nums", d.oficial && "font-semibold text-foreground")}>
+              {d.passo === 5 ? "0%" : d.faixa.split(" a ")[0]}
+            </span>
+          </span>
+        ))}
+        <span className="ml-0.5">
+          de pontuação · até 33% <strong className="font-semibold text-foreground">desafio</strong>,
+          67%+ <strong className="font-semibold text-foreground">ponto forte</strong>
         </span>
-        <span>mais</span>
       </span>
+
       <span className="flex items-center gap-1.5">
         <svg width="14" height="14" aria-hidden>
           <circle cx="7" cy="7" r="4.5" fill="var(--muted-foreground)" />

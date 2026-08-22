@@ -1,4 +1,5 @@
 import { PerfilDivergente } from "@/components/graficos/formas";
+import { TiraPontuacao } from "@/components/graficos/legenda-pontuacao";
 import { cn } from "@/lib/utils";
 import {
   amplitudeComponentes,
@@ -25,9 +26,6 @@ import {
  * A cor nunca trabalha sozinha: cada célula também traz o número e uma barra de
  * valor, para que a severidade continue legível sem depender do canal de cor.
  */
-
-/** Quantos degraus a rampa tem. Índice 0 = sem déficit; 5 = déficit máximo. */
-const DEGRAUS = 6;
 
 /**
  * Abaixo desta amplitude entre o melhor e o pior componente, a grade não tem
@@ -212,16 +210,8 @@ export function ComponenteHeatmap({
           </p>
         </div>
 
-        {/* legenda da escala — degraus discretos, não gradiente */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>menos lacuna</span>
-          <span className="flex overflow-hidden rounded-sm" aria-hidden>
-            {Array.from({ length: DEGRAUS }, (_, i) => (
-              <span key={i} className="block size-3.5" style={{ background: `var(--calor-${i})` }} />
-            ))}
-          </span>
-          <span>mais</span>
-        </div>
+        {/* cada cor amarrada à faixa que representa, com os rótulos do manual */}
+        <TiraPontuacao />
       </div>
 
       {/*

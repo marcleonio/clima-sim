@@ -5,6 +5,7 @@ import { ArrowRight, FileText, Search, SearchX, ShieldAlert, Undo2, X } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BalaoAgente } from "@/components/agente/balao";
+import { PlanoAcao } from "@/components/achado/plano-acao";
 import { PrecedentesDoEnte } from "@/components/painel/grafo-semelhanca";
 import { AchadoList } from "@/components/achado/achado-list";
 import { ComponenteHeatmap } from "@/components/achado/componente-heatmap";
@@ -38,6 +39,7 @@ import { insightsDoEnte } from "@/lib/agente/insights";
 import { regiaoDe } from "@/lib/territorio";
 import { paragrafoSazonal } from "@/lib/enso";
 import { pontesPara } from "@/lib/grafo";
+import { planoDeAcao } from "@/lib/plano";
 import { carregarDossie, ENTES, META, NOMES_ENTES, taxasDosOutros } from "@/lib/dados";
 import referenciasBrutas from "@/data/referencias.json";
 
@@ -147,6 +149,21 @@ function AchadosPage() {
   const precedentes = useMemo(() => {
     if (!enteAtivo || !ente) return [];
     return pontesPara(enteAtivo, (c) => (ente.comps[c]?.l ?? 0) > 0);
+  }, [enteAtivo, ente]);
+
+  /**
+    * O que o gestor faz com a informação: o painel diz onde está pior, o plano
+    * diz em que ordem atacar — e por quê.
+    */
+  const plano = useMemo(() => {
+    const resumo = enteAtivo ? ENTES[enteAtivo] : undefined;
+    if (!enteAtivo || !resumo || !ente) return null;
+    return planoDeAcao(
+      enteAtivo,
+      resumo,
+      META.componentes,
+      (c) => ente.achados.find((a) => a.c === c)?.eixo ?? "",
+    );
   }, [enteAtivo, ente]);
 
   const insights = useMemo(() => {
@@ -377,6 +394,8 @@ function AchadosPage() {
             />
 
             <Veredito veredito={veredito} financas={ENTES[enteAtivo]?.fin} />
+
+            {plano && plano.passos.length > 0 && <PlanoAcao plano={plano} />}
 
             {enteAtivo && precedentes.length > 0 && (
               <PrecedentesDoEnte nome={enteAtivo} pontes={precedentes} />
