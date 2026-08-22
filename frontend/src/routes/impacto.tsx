@@ -118,8 +118,8 @@ function Impacto() {
           </h2>
           <div className="mt-6">
             <Button variant="secondary" asChild>
-              <Link to="/simulador">
-                Abrir o simulador <ArrowRight className="size-4" />
+              <Link to="/achados">
+                Ver os achados do seu ente <ArrowRight className="size-4" />
               </Link>
             </Button>
           </div>

@@ -14,6 +14,8 @@ import {
   protocoloDe,
   severidade,
   taxaLacuna,
+  vereditoDe,
+  amplitudeComponentes,
   type Achado,
   type Ente,
 } from "@/lib/achados";
@@ -295,5 +297,123 @@ describe("mapaComponentes", () => {
     );
 
     expect(celulas.at(0)?.c).toBe("P5");
+  });
+});
+
+// ------------------------------------------------------------------ veredito
+
+describe("vereditoDe", () => {
+  const base = {
+    tipo: "Município",
+    pop: 436_591,
+    achados: [] as Achado[],
+  };
+
+  it("diz quantos requisitos ficaram sem ação, com o nome do ente", () => {
+    const v = vereditoDe(
+      "Boa Vista",
+      { ...base, tot: 44, lac: 43, mat: 0.8, rank: 1 },
+      49,
+      46.9,
+    );
+
+    expect(v.titulo).toBe("43 de 44 requisitos sem ação demonstrada em Boa Vista.");
+  });
+
+  it("troca a contagem por uma afirmação limpa quando não há lacuna", () => {
+    const v = vereditoDe(
+      "Minas Gerais",
+      { ...base, tipo: "Estado", tot: 45, lac: 0, mat: 83, rank: 49 },
+      49,
+      46.9,
+    );
+
+    expect(v.titulo).toBe("Nenhum requisito sem ação demonstrada em Minas Gerais.");
+    expect(v.alerta).toBeNull();
+  });
+
+  it("trata o primeiro colocado como caso especial, sem dizer '1ª posição'", () => {
+    const v = vereditoDe("Boa Vista", { ...base, tot: 44, lac: 43, mat: 0.8, rank: 1 }, 49, 46.9);
+
+    expect(v.contexto).toContain("o ente mais frágil entre os 49 avaliados");
+    expect(v.contexto).not.toContain("1ª posição");
+  });
+
+  it("situa o ente contra a média nacional, com direção", () => {
+    const acima = vereditoDe("Acre", { ...base, tot: 45, lac: 2, mat: 71.9, rank: 40 }, 49, 46.9);
+    expect(acima.contexto).toContain("25,0 pontos acima");
+
+    const abaixo = vereditoDe("Macapá", { ...base, tot: 44, lac: 42, mat: 1.5, rank: 2 }, 49, 46.9);
+    expect(abaixo.contexto).toContain("45,4 pontos abaixo");
+  });
+
+  it("alerta sobre requisitos de risco de vida sem afirmar risco físico", () => {
+    const achados: Achado[] = [
+      { c: "P5", i: "A", nome: "Defesa civil", eixo: "Políticas públicas", lei: "", txt: "" },
+      { c: "P2", i: "B", nome: "Adaptação", eixo: "Políticas públicas", lei: "", txt: "" },
+    ];
+    const v = vereditoDe(
+      "Boa Vista",
+      { ...base, achados, tot: 44, lac: 43, mat: 0.8, rank: 1 },
+      49,
+      46.9,
+    );
+
+    expect(v.alerta).toContain("2 lacunas");
+    expect(v.alerta).toContain("436.591 habitantes");
+    // a formulação mede lacuna de governança, nunca risco físico
+    expect(v.alerta).toContain("jurisdição");
+    expect(v.alerta).not.toMatch(/risco de morrer|em risco|expostas/i);
+  });
+
+  it("omite a população quando ela é desconhecida", () => {
+    const achados: Achado[] = [
+      { c: "P5", i: "A", nome: "Defesa civil", eixo: "Políticas públicas", lei: "", txt: "" },
+    ];
+    const v = vereditoDe(
+      "Ente sem população",
+      { ...base, pop: null, achados, tot: 44, lac: 43, mat: 0.8, rank: 1 },
+      49,
+      46.9,
+    );
+
+    expect(v.alerta).toContain("1 lacuna");
+    expect(v.alerta).not.toContain("habitantes");
+  });
+
+  it("carrega a severidade para a interface não recalcular", () => {
+    expect(
+      vereditoDe("Boa Vista", { ...base, tot: 44, lac: 43, mat: 0.8, rank: 1 }, 49, 46.9).severidade,
+    ).toBe("critico");
+    expect(
+      vereditoDe("Minas Gerais", { ...base, tot: 45, lac: 0, mat: 83, rank: 49 }, 49, 46.9)
+        .severidade,
+    ).toBe("maduro");
+  });
+});
+
+describe("amplitudeComponentes", () => {
+  it("mede a distância entre o melhor e o pior componente", () => {
+    expect(
+      amplitudeComponentes({
+        G1: { t: 3, l: 0, m: 88.9 },
+        F3: { t: 2, l: 1, m: 16.7 },
+        P5: { t: 3, l: 0, m: 55.6 },
+      }),
+    ).toBeCloseTo(72.2, 1);
+  });
+
+  it("devolve zero quando todos os componentes valem o mesmo", () => {
+    expect(
+      amplitudeComponentes({
+        G1: { t: 3, l: 3, m: 0 },
+        F3: { t: 2, l: 2, m: 0 },
+      }),
+    ).toBe(0);
+  });
+
+  it("devolve zero quando não há o que comparar", () => {
+    expect(amplitudeComponentes({})).toBe(0);
+    expect(amplitudeComponentes({ G1: { t: 3, l: 0, m: 88.9 } })).toBe(0);
   });
 });

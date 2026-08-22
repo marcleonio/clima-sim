@@ -131,8 +131,8 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" variant="secondary" asChild>
-              <Link to="/simulador">
-                Abrir o simulador <ArrowRight className="size-4" />
+              <Link to="/achados">
+                Consultar meu estado ou capital <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button
@@ -222,8 +222,8 @@ function Landing() {
           </div>
           <div className="mt-10">
             <Button asChild>
-              <Link to="/simulador">
-                Simular um mandato <ArrowRight className="size-4" />
+              <Link to="/achados">
+                Gerar a peça de cobrança <ArrowRight className="size-4" />
               </Link>
             </Button>
           </div>

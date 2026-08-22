@@ -129,8 +129,8 @@ function Metodologia() {
 
       <div className="mt-12">
         <Button asChild>
-          <Link to="/simulador">
-            Testar no simulador <ArrowRight className="size-4" />
+          <Link to="/achados">
+            Ver os achados <ArrowRight className="size-4" />
           </Link>
         </Button>
       </div>

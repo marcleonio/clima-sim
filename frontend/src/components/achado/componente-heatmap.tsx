@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
-import { mapaComponentes, type CelulaComponente, type Ente, type MediaNacional } from "@/lib/achados";
+import {
+  amplitudeComponentes,
+  mapaComponentes,
+  type CelulaComponente,
+  type Ente,
+  type MediaNacional,
+} from "@/lib/achados";
 
 /**
  * Mapa de calor dos 15 componentes da metodologia oficial.
@@ -21,6 +27,13 @@ import { mapaComponentes, type CelulaComponente, type Ente, type MediaNacional }
 
 /** Quantos degraus a rampa tem. Índice 0 = sem déficit; 5 = déficit máximo. */
 const DEGRAUS = 6;
+
+/**
+ * Abaixo desta amplitude entre o melhor e o pior componente, a grade não tem
+ * calor para mostrar: os 15 cartões dizem todos a mesma coisa. Aí a lista
+ * compacta informa igual ocupando um quinto do espaço.
+ */
+const AMPLITUDE_MINIMA_PARA_GRADE = 12;
 
 /**
  * Corta a maturidade (0–100) em um dos 6 degraus de déficit.
@@ -45,57 +58,163 @@ export function degrauDeficit(maturidade: number): number {
   return 0;
 }
 
-function Celula({ celula }: { celula: CelulaComponente }) {
+function estiloDoDegrau(degrau: number): React.CSSProperties {
+  // A tinta do degrau vale para tudo dentro da célula. A hierarquia entre o
+  // número e os rótulos se faz por tamanho e peso, não por opacidade — baixar a
+  // opacidade sobre os degraus escuros derrubaria o contraste abaixo de AA.
+  return {
+    background: `var(--calor-${degrau})`,
+    color: `var(--calor-${degrau}-tinta)`,
+    borderColor: `color-mix(in oklch, var(--calor-${degrau}) 72%, var(--foreground) 12%)`,
+  };
+}
+
+function Celula({
+  celula,
+  selecionado,
+  onSelecionar,
+}: {
+  celula: CelulaComponente;
+  selecionado: boolean;
+  onSelecionar: (() => void) | undefined;
+}) {
   const { nome, c, maturidade, delta, lacunas, total } = celula;
   const acima = delta > 0;
   const degrau = degrauDeficit(maturidade);
 
-  // A tinta do degrau vale para tudo dentro da célula. A hierarquia entre o
-  // número e os rótulos se faz por tamanho e peso, não por opacidade — baixar a
-  // opacidade sobre os degraus escuros derrubaria o contraste abaixo de AA.
-  const estilo = {
-    background: `var(--calor-${degrau})`,
-    color: `var(--calor-${degrau}-tinta)`,
-    borderColor: `color-mix(in oklch, var(--calor-${degrau}) 72%, var(--foreground) 12%)`,
-  } as React.CSSProperties;
-
-  return (
-    <li
-      className="group relative overflow-hidden rounded-lg border p-3 pb-4 transition-shadow hover:z-10 hover:shadow-md"
-      style={estilo}
-    >
-      <div className="flex items-baseline justify-between gap-1">
+  const miolo = (
+    <>
+      <span className="flex items-baseline justify-between gap-1">
         <span className="font-mono text-xs font-bold tracking-wide">{c}</span>
-        <span className="text-lg font-bold leading-none tabular-nums">{Math.round(maturidade)}</span>
-      </div>
+        <span className="text-lg font-bold leading-none tabular-nums">
+          {Math.round(maturidade)}
+        </span>
+      </span>
 
-      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight">{nome}</p>
+      <span className="mt-2 line-clamp-2 block text-sm font-semibold leading-tight">{nome}</span>
 
-      <p className="mt-2 flex items-center gap-1 text-xs">
+      <span className="mt-2 flex items-center gap-1 text-xs">
         <span className="font-bold">
           {acima ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}
         </span>
         <span className="opacity-80">vs país</span>
-      </p>
+      </span>
 
       {lacunas > 0 && (
-        <p className="mt-1 text-xs font-bold">
+        <span className="mt-1 block text-xs font-bold">
           {lacunas}/{total} sem progresso
-        </p>
+        </span>
       )}
 
       {/* barra de valor: reforça a severidade por posição/forma, não só por matiz */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-1.5 bg-black/10 dark:bg-white/10"
+      <span
+        className="absolute inset-x-0 bottom-0 block h-1.5 bg-black/10 dark:bg-white/10"
         role="img"
         aria-label={`Maturidade ${Math.round(maturidade)} de 100`}
       >
-        <div
-          className="h-full transition-[width]"
+        <span
+          className="block h-full transition-[width]"
           style={{ width: `${maturidade}%`, background: "currentColor" }}
         />
-      </div>
+      </span>
+    </>
+  );
+
+  const classe = cn(
+    "group relative block w-full overflow-hidden rounded-lg border p-3 pb-4 text-left",
+    selecionado && "ring-2 ring-offset-2 ring-offset-card ring-foreground",
+  );
+
+  // Sem ação, não finge ser clicável: o realce de hover só aparece quando há
+  // para onde clicar.
+  if (!onSelecionar) {
+    return (
+      <li className={classe} style={estiloDoDegrau(degrau)}>
+        {miolo}
+      </li>
+    );
+  }
+
+  return (
+    <li className="contents">
+      <button
+        type="button"
+        onClick={onSelecionar}
+        aria-pressed={selecionado}
+        className={cn(
+          classe,
+          "cursor-pointer transition-shadow hover:z-10 hover:shadow-md",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+        )}
+        style={estiloDoDegrau(degrau)}
+      >
+        <span className="sr-only">
+          {selecionado ? "Remover filtro de" : "Filtrar os achados por"} {nome}.{" "}
+        </span>
+        {miolo}
+      </button>
     </li>
+  );
+}
+
+/** Versão compacta: quando não há variação, a grade não tem o que mostrar. */
+function ListaCompacta({
+  celulas,
+  filtro,
+  onSelecionar,
+}: {
+  celulas: CelulaComponente[];
+  filtro: string | null;
+  onSelecionar: ((c: string) => void) | undefined;
+}) {
+  return (
+    <ul className="divide-y rounded-lg border">
+      {celulas.map((celula) => {
+        const degrau = degrauDeficit(celula.maturidade);
+        const selecionado = filtro === celula.c;
+        const conteudo = (
+          <>
+            <span
+              className="size-3 flex-none rounded-sm"
+              style={{ background: `var(--calor-${degrau})` }}
+              aria-hidden
+            />
+            <span className="w-8 flex-none font-mono text-xs font-bold text-muted-foreground">
+              {celula.c}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{celula.nome}</span>
+            {celula.lacunas > 0 && (
+              <span className="flex-none text-xs font-semibold text-[var(--sev-critico)]">
+                {celula.lacunas}/{celula.total}
+              </span>
+            )}
+            <span className="w-8 flex-none text-right text-sm font-bold tabular-nums">
+              {Math.round(celula.maturidade)}
+            </span>
+          </>
+        );
+
+        return (
+          <li key={celula.c}>
+            {onSelecionar ? (
+              <button
+                type="button"
+                onClick={() => onSelecionar(celula.c)}
+                aria-pressed={selecionado}
+                className={cn(
+                  "flex min-h-11 w-full cursor-pointer items-center gap-2.5 px-3 text-left transition-colors hover:bg-accent/50",
+                  selecionado && "bg-accent",
+                )}
+              >
+                {conteudo}
+              </button>
+            ) : (
+              <span className="flex min-h-11 w-full items-center gap-2.5 px-3">{conteudo}</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -103,24 +222,39 @@ export function ComponenteHeatmap({
   ente,
   nomes,
   nacional,
+  filtro = null,
+  onFiltrar,
 }: {
   ente: Ente;
   nomes: Record<string, string>;
   nacional: Record<string, MediaNacional>;
+  /** Componente atualmente usado como filtro da lista de achados. */
+  filtro?: string | null;
+  /** Quando ausente, as células não são interativas e não fingem ser. */
+  onFiltrar?: (componente: string | null) => void;
 }) {
   const celulas = mapaComponentes(ente, nomes, nacional);
   if (!celulas.length) return null;
 
+  const amplitude = amplitudeComponentes(ente.comps);
+  const usarGrade = amplitude >= AMPLITUDE_MINIMA_PARA_GRADE;
+
+  const selecionar = onFiltrar
+    ? (c: string) => onFiltrar(filtro === c ? null : c)
+    : undefined;
+
   return (
-    <section aria-labelledby="mapa-componentes" className="rounded-xl border bg-card p-4">
+    <section aria-labelledby="mapa-componentes" className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           <h2 id="mapa-componentes" className="text-base font-bold">
             Mapa de maturidade
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Os 15 componentes oficiais, do mais frágil ao mais maduro. Quanto mais escuro, maior a
-            lacuna.
+            {usarGrade
+              ? "Os 15 componentes oficiais, do mais frágil ao mais maduro. Quanto mais escuro, maior a lacuna."
+              : "Os 15 componentes variam pouco entre si neste ente — a lista diz o mesmo que a grade."}
+            {selecionar && " Toque para filtrar os achados."}
           </p>
         </div>
 
@@ -129,22 +263,27 @@ export function ComponenteHeatmap({
           <span>menos lacuna</span>
           <span className="flex overflow-hidden rounded-sm" aria-hidden>
             {Array.from({ length: DEGRAUS }, (_, i) => (
-              <span
-                key={i}
-                className="block size-3.5"
-                style={{ background: `var(--calor-${i})` }}
-              />
+              <span key={i} className="block size-3.5" style={{ background: `var(--calor-${i})` }} />
             ))}
           </span>
           <span>mais</span>
         </div>
       </div>
 
-      <ul className={cn("grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5")}>
-        {celulas.map((c) => (
-          <Celula key={c.c} celula={c} />
-        ))}
-      </ul>
+      {usarGrade ? (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {celulas.map((c) => (
+            <Celula
+              key={c.c}
+              celula={c}
+              selecionado={filtro === c.c}
+              onSelecionar={selecionar ? () => selecionar(c.c) : undefined}
+            />
+          ))}
+        </ul>
+      ) : (
+        <ListaCompacta celulas={celulas} filtro={filtro} onSelecionar={selecionar} />
+      )}
     </section>
   );
 }

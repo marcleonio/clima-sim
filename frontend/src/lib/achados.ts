@@ -182,6 +182,78 @@ export function diagnosticoColisao(ente: Pick<Ente, "achados" | "pop">): Diagnos
   };
 }
 
+// ---------------------------------------------------------------- veredito
+
+export interface Veredito {
+  /** A frase que responde "e daí?" antes de qualquer grade. */
+  titulo: string;
+  /** Contexto federativo: posição e comparação com o país. */
+  contexto: string;
+  /** Alerta de risco de vida, quando há. */
+  alerta: string | null;
+  severidade: Severidade;
+}
+
+/**
+ * O que a tela precisa dizer antes de mostrar qualquer gráfico.
+ *
+ * Quem abre o dossiê de um ente quer uma resposta, não uma grade de 15
+ * cartões para interpretar. Em Boa Vista, os 15 componentes marcam quase todos
+ * zero — a grade gastava a dobra inteira para dizer uma coisa só. A frase diz
+ * essa coisa; a grade vira detalhe.
+ */
+export function vereditoDe(
+  nome: string,
+  ente: Pick<Ente, "tipo" | "tot" | "lac" | "mat" | "rank" | "achados" | "pop">,
+  totalDeEntes: number,
+  mediaNacional: number,
+): Veredito {
+  const taxa = taxaLacuna(ente);
+  const sev = severidade(taxa);
+  const { criticos } = diagnosticoColisao(ente);
+
+  const titulo =
+    ente.lac === 0
+      ? `Nenhum requisito sem ação demonstrada em ${nome}.`
+      : `${ente.lac} de ${ente.tot} requisitos sem ação demonstrada em ${nome}.`;
+
+  const distancia = Math.abs(ente.mat - mediaNacional);
+  const posicao =
+    ente.rank === 1
+      ? `É o ente mais frágil entre os ${totalDeEntes} avaliados no país`
+      : `Ocupa a ${ente.rank}ª posição em fragilidade entre os ${totalDeEntes} avaliados`;
+  const contexto =
+    `${posicao}, com índice de maturidade ${formatarPercentual(ente.mat)} — ` +
+    `${distancia.toFixed(1).replace(".", ",")} pontos ` +
+    `${ente.mat >= mediaNacional ? "acima" : "abaixo"} da média nacional.`;
+
+  // "sob jurisdição", nunca "em risco": a métrica mede lacuna de governança,
+  // não risco físico.
+  const alerta =
+    criticos.length > 0
+      ? `${criticos.length} ${criticos.length === 1 ? "lacuna" : "lacunas"} em requisitos de ` +
+        `defesa civil e adaptação` +
+        (ente.pop
+          ? `, em jurisdição com ${formatarNumero(ente.pop)} habitantes.`
+          : ".")
+      : null;
+
+  return { titulo, contexto, alerta, severidade: sev };
+}
+
+/**
+ * Amplitude entre o melhor e o pior componente, em pontos.
+ *
+ * Um mapa de calor só se justifica quando há calor para mostrar. Abaixo de um
+ * punhado de pontos de amplitude, os 15 cartões dizem todos a mesma coisa e a
+ * lista compacta informa igual ocupando um quinto do espaço.
+ */
+export function amplitudeComponentes(comps: Record<string, ResumoEixo>): number {
+  const valores = Object.values(comps).map((c) => c.m);
+  if (valores.length < 2) return 0;
+  return Math.max(...valores) - Math.min(...valores);
+}
+
 // ---------------------------------------------------------------- referências
 
 export interface Referencia {

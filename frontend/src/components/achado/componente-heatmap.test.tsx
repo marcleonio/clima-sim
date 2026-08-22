@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { ComponenteHeatmap, degrauDeficit } from "@/components/achado/componente-heatmap";
 import type { Ente } from "@/lib/achados";
@@ -14,6 +15,20 @@ const NACIONAL = {
   P5: { m: 41.3, l: 35.8 },
   G1: { m: 68.6, l: 13.1 },
   F3: { m: 27.3, l: 56 },
+};
+
+/** Amplitude alta entre componentes: a grade tem calor para mostrar. */
+const VARIADO: Ente["comps"] = {
+  G1: { t: 3, l: 0, m: 88.9 },
+  F3: { t: 2, l: 1, m: 16.7 },
+  P5: { t: 3, l: 0, m: 55.6 },
+};
+
+/** Amplitude quase nula: os cartões diriam todos a mesma coisa. */
+const UNIFORME: Ente["comps"] = {
+  G1: { t: 3, l: 3, m: 0 },
+  F3: { t: 2, l: 2, m: 0 },
+  P5: { t: 3, l: 3, m: 0 },
 };
 
 function ente(comps: Ente["comps"]): Ente {
@@ -86,33 +101,17 @@ describe("ComponenteHeatmap", () => {
   });
 
   it("ordena do mais frágil para o mais maduro — o olho cai no problema primeiro", () => {
-    render(
-      <ComponenteHeatmap
-        ente={ente({
-          G1: { t: 3, l: 0, m: 88.9 },
-          F3: { t: 2, l: 1, m: 16.7 },
-          P5: { t: 3, l: 0, m: 55.6 },
-        })}
-        nomes={NOMES}
-        nacional={NACIONAL}
-      />,
-    );
+    render(<ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />);
 
-    const codigos = screen
+    const ordem = screen
       .getAllByRole("listitem")
-      .map((li) => li.querySelector("span")?.textContent);
+      .map((li) => li.textContent?.match(/^(G1|F3|P5)/)?.[1]);
 
-    expect(codigos).toEqual(["F3", "P5", "G1"]);
+    expect(ordem).toEqual(["F3", "P5", "G1"]);
   });
 
-  it("não deixa a cor trabalhar sozinha: o valor também sai em número e em barra", () => {
-    render(
-      <ComponenteHeatmap
-        ente={ente({ F3: { t: 2, l: 1, m: 16.7 } })}
-        nomes={NOMES}
-        nacional={NACIONAL}
-      />,
-    );
+  it("não deixa a cor trabalhar sozinha: o valor sai em número e em barra", () => {
+    render(<ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />);
 
     expect(screen.getByText("17")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /maturidade 17 de 100/i })).toBeInTheDocument();
@@ -120,15 +119,72 @@ describe("ComponenteHeatmap", () => {
   });
 
   it("mostra a distância para a média nacional com direção", () => {
-    render(
-      <ComponenteHeatmap
-        ente={ente({ F3: { t: 2, l: 1, m: 16.7 } })}
-        nomes={NOMES}
-        nacional={NACIONAL}
-      />,
-    );
+    render(<ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />);
 
     // 16,7 contra 27,3 do país → 11 pontos abaixo.
     expect(screen.getByText(/▼ 11/)).toBeInTheDocument();
+  });
+
+  it("troca a grade por lista compacta quando não há variação para mostrar", () => {
+    const { rerender } = render(
+      <ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />,
+    );
+    expect(screen.getByText(/do mais frágil ao mais maduro/i)).toBeInTheDocument();
+
+    rerender(<ComponenteHeatmap ente={ente(UNIFORME)} nomes={NOMES} nacional={NACIONAL} />);
+    expect(screen.getByText(/variam pouco entre si/i)).toBeInTheDocument();
+    // a informação continua toda lá, só ocupando menos espaço
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("sem onFiltrar, as células não fingem ser clicáveis", () => {
+    render(<ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />);
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("com onFiltrar, clicar numa célula filtra por ela e clicar de novo limpa", async () => {
+    const aoFiltrar = vi.fn();
+    const usuario = userEvent.setup();
+
+    const { rerender } = render(
+      <ComponenteHeatmap
+        ente={ente(VARIADO)}
+        nomes={NOMES}
+        nacional={NACIONAL}
+        onFiltrar={aoFiltrar}
+      />,
+    );
+
+    await usuario.click(screen.getByRole("button", { name: /Mobilização de investimentos/i }));
+    expect(aoFiltrar).toHaveBeenCalledWith("F3");
+
+    // já filtrado por F3, o mesmo clique limpa
+    rerender(
+      <ComponenteHeatmap
+        ente={ente(VARIADO)}
+        nomes={NOMES}
+        nacional={NACIONAL}
+        filtro="F3"
+        onFiltrar={aoFiltrar}
+      />,
+    );
+    await usuario.click(screen.getByRole("button", { name: /Mobilização de investimentos/i }));
+    expect(aoFiltrar).toHaveBeenLastCalledWith(null);
+  });
+
+  it("marca a célula filtrada para leitor de tela", () => {
+    render(
+      <ComponenteHeatmap
+        ente={ente(VARIADO)}
+        nomes={NOMES}
+        nacional={NACIONAL}
+        filtro="F3"
+        onFiltrar={vi.fn()}
+      />,
+    );
+
+    const alvo = screen.getByRole("button", { name: /Mobilização de investimentos/i });
+    expect(alvo).toHaveAttribute("aria-pressed", "true");
   });
 });

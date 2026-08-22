@@ -136,6 +136,30 @@
   --calor-3-tinta: oklch(0.2 0.04 150);
   --calor-4-tinta: oklch(1 0 0);
   --calor-5-tinta: oklch(1 0 0);
+
+  /*
+   * Severidade. Cor de ESTADO — nunca vira série de gráfico. Sempre
+   * acompanhada de rótulo ou ícone: cor jamais trabalha sozinha.
+   * Contraste medido sobre o papel: 8,69 · 5,61 · 5,40 · 6,34.
+   */
+  --sev-critico: #8f1d14;
+  --sev-grave: #a9490b;
+  --sev-atencao: #8a6100;
+  --sev-ok: #1b6b41;
+  --sev-critico-bg: #fbeae7;
+  --sev-grave-bg: #fbefe4;
+  --sev-atencao-bg: #f8f2df;
+  --sev-ok-bg: #e8f2ea;
+
+  /*
+   * Séries categóricas: os 3 eixos da metodologia, em ordem fixa e nunca
+   * recicladas — um filtro que reduz séries não pode repintar as que ficaram.
+   * Validadas: separação ΔE 18,7 (protanopia) e 18,6 (tritanopia), piso de
+   * visão normal 25,1. Nenhuma é verde, para não competir com o acento.
+   */
+  --eixo-gov: #1683a8;
+  --eixo-pol: #c06a00;
+  --eixo-fin: #8257d9;
 }
 
 @theme inline {
@@ -144,44 +168,75 @@
   --color-leaf: var(--leaf);
   --color-water: var(--water);
   --color-earth: var(--earth);
-  --font-display: "Fraunces", Georgia, serif;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Newsreader para títulos: serifa editorial com eixo óptico, peso
+   * institucional sem a rigidez de uma serifa de jornal. Substitui Fraunces,
+   * que tem personalidade forte demais para uma peça que vai anexada a
+   * processo administrativo.
+   *
+   * Public Sans para corpo e interface: é a tipografia do design system do
+   * governo dos EUA, desenhada para texto público denso e com algarismos
+   * tabulares de série.
+   */
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* severidade — reservada para estado, nunca reaproveitada como série */
+  --color-sev-critico: var(--sev-critico);
+  --color-sev-grave: var(--sev-grave);
+  --color-sev-atencao: var(--sev-atencao);
+  --color-sev-ok: var(--sev-ok);
+
+  /* séries categóricas — os 3 eixos da metodologia, em ordem fixa */
+  --color-eixo-gov: var(--eixo-gov);
+  --color-eixo-pol: var(--eixo-pol);
+  --color-eixo-fin: var(--eixo-fin);
 }
 
 
+/*
+ * Tema escuro na família da marca.
+ *
+ * O anterior era o padrão do shadcn — azul-ardósia, sem relação nenhuma com a
+ * identidade verde do tema claro, e com --primary quase branco, o que apagava a
+ * marca. Um tema escuro não é a inversão do claro: cada valor é escolhido
+ * contra a nova superfície.
+ */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: oklch(0.17 0.014 158);
+  --foreground: oklch(0.94 0.008 150);
+  --card: oklch(0.22 0.016 158);
+  --card-foreground: oklch(0.94 0.008 150);
+  --popover: oklch(0.22 0.016 158);
+  --popover-foreground: oklch(0.94 0.008 150);
+  --primary: oklch(0.75 0.115 155);
+  --primary-foreground: oklch(0.17 0.014 158);
+  --secondary: oklch(0.27 0.022 158);
+  --secondary-foreground: oklch(0.94 0.008 150);
+  --muted: oklch(0.27 0.022 158);
+  --muted-foreground: oklch(0.73 0.02 152);
+  --accent: oklch(0.3 0.035 175);
+  --accent-foreground: oklch(0.95 0.01 150);
+  --destructive: oklch(0.7 0.17 25);
+  --destructive-foreground: oklch(0.17 0.014 158);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.7 0.1 155);
+  --chart-1: oklch(0.7 0.12 155);
+  --chart-2: oklch(0.68 0.11 225);
+  --chart-3: oklch(0.75 0.13 70);
+  --chart-4: oklch(0.62 0.1 190);
+  --chart-5: oklch(0.68 0.14 35);
+  --sidebar: oklch(0.22 0.016 158);
+  --sidebar-foreground: oklch(0.94 0.008 150);
+  --sidebar-primary: oklch(0.75 0.115 155);
+  --sidebar-primary-foreground: oklch(0.17 0.014 158);
+  --sidebar-accent: oklch(0.27 0.022 158);
+  --sidebar-accent-foreground: oklch(0.94 0.008 150);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.7 0.1 155);
 
   /*
    * A rampa é re-degrauada para o fundo escuro, não invertida: contra uma
@@ -201,6 +256,20 @@
   --calor-3-tinta: oklch(0.99 0.005 150);
   --calor-4-tinta: oklch(0.2 0.03 40);
   --calor-5-tinta: oklch(0.18 0.03 40);
+
+  /* re-degrauadas contra a superfície escura, não invertidas */
+  --sev-critico: #f4897a;
+  --sev-grave: #e5a055;
+  --sev-atencao: #d4b45c;
+  --sev-ok: #6fc894;
+  --sev-critico-bg: #2a1815;
+  --sev-grave-bg: #291d12;
+  --sev-atencao-bg: #262010;
+  --sev-ok-bg: #17291e;
+
+  --eixo-gov: #2e93b8;
+  --eixo-pol: #c47c22;
+  --eixo-fin: #8a68d4;
 }
 
 @layer base {
@@ -217,16 +286,33 @@
 @layer base {
   body {
     font-family: var(--font-sans);
+    /* A atmosfera do fundo precisa de valores próprios no escuro: os mesmos
+       halos claros sobre superfície escura viram manchas leitosas. */
     background-image:
       radial-gradient(circle at 12% -5%, oklch(0.85 0.09 150 / 0.45), transparent 45%),
       radial-gradient(circle at 92% 8%, oklch(0.85 0.07 210 / 0.4), transparent 40%);
     background-attachment: fixed;
   }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 12% -5%, oklch(0.42 0.06 155 / 0.5), transparent 48%),
+      radial-gradient(circle at 92% 8%, oklch(0.38 0.05 210 / 0.45), transparent 42%);
+  }
+
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    font-optical-sizing: auto;
+    letter-spacing: -0.015em;
+  }
+
+  /* Onde dígitos se alinham em coluna, eles precisam ter a mesma largura. */
+  .tabular-nums,
+  table,
+  [data-documento] {
+    font-variant-numeric: tabular-nums;
   }
 }
 

@@ -59,6 +59,63 @@ export const TIPOS_DOCUMENTO: DefinicaoDocumento[] = [
   },
 ];
 
+/**
+ * Quem está olhando.
+ *
+ * As quatro peças pertencem a atores diferentes — tribunal, cidadão, gestor,
+ * parlamentar — mas a tela não sabia quem estava ali e oferecia as quatro com
+ * peso idêntico, obrigando a ler quatro descrições para decidir. Uma pergunta
+ * só resolve isso e ainda serve de entrada para a priorização multicritério.
+ */
+export type Perfil = "controle" | "cidadao" | "gestor" | "legislativo";
+
+export interface DefinicaoPerfil {
+  id: Perfil;
+  nome: string;
+  descricao: string;
+  /** A peça que este perfil emite por padrão — vira a ação primária da tela. */
+  documento: TipoDocumento;
+}
+
+export const PERFIS: DefinicaoPerfil[] = [
+  {
+    id: "controle",
+    nome: "Controle externo",
+    descricao: "Tribunal de contas, Ministério Público, controladoria",
+    documento: "oficio",
+  },
+  {
+    id: "gestor",
+    nome: "Gestor público",
+    descricao: "Secretaria, órgão ou prefeitura avaliada",
+    documento: "plano",
+  },
+  {
+    id: "legislativo",
+    nome: "Legislativo",
+    descricao: "Vereador, deputado, assessoria parlamentar",
+    documento: "legis",
+  },
+  {
+    id: "cidadao",
+    nome: "Cidadão ou imprensa",
+    descricao: "Jornalista, pesquisador, organização da sociedade civil",
+    documento: "lai",
+  },
+];
+
+export function perfilPadrao(perfil: Perfil): DefinicaoPerfil {
+  return PERFIS.find((p) => p.id === perfil) ?? PERFIS[0]!;
+}
+
+/** A peça primária do perfil, seguida das demais na ordem original. */
+export function documentosPara(perfil: Perfil): DefinicaoDocumento[] {
+  const alvo = perfilPadrao(perfil).documento;
+  const primaria = TIPOS_DOCUMENTO.find((t) => t.id === alvo);
+  if (!primaria) return TIPOS_DOCUMENTO;
+  return [primaria, ...TIPOS_DOCUMENTO.filter((t) => t.id !== alvo)];
+}
+
 export interface ContextoDocumento {
   nomeEnte: string;
   ente: Ente;

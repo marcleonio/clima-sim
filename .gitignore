@@ -30,3 +30,7 @@ doc.txt
 
 # Saída de cobertura de testes (gerada por vitest --coverage)
 coverage
+
+# Saída de build do nitro/wrangler
+.output
+.wrangler

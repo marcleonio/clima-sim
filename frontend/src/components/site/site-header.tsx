@@ -5,7 +5,6 @@ import { useState } from "react";
 const NAV = [
   { to: "/", label: "Início" },
   { to: "/achados", label: "Achados" },
-  { to: "/simulador", label: "Simulador" },
   { to: "/metodologia", label: "Metodologia" },
   { to: "/impacto", label: "Impacto" },
 ] as const;
@@ -16,14 +15,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 py-3">
-        <Link to="/" className="flex min-w-0 items-center gap-2.5">
+        <Link to="/" className="flex min-h-11 min-w-0 items-center gap-2.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl leaf-gradient text-primary-foreground">
             <Leaf className="size-4" />
           </span>
           <span className="min-w-0">
             <span className="block truncate font-display text-lg leading-none">ClimaSim</span>
             <span className="block truncate text-xs uppercase tracking-widest text-muted-foreground">
-              Climate Simulator
+              Do dado público à peça de cobrança
             </span>
           </span>
         </Link>
@@ -36,7 +35,7 @@ export function SiteHeader() {
               activeOptions={{ exact: item.to === "/" }}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}
               inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
-              className="rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors"
+              className="flex min-h-11 items-center rounded-lg px-3.5 text-sm font-semibold transition-colors"
             >
               {item.label}
             </Link>
@@ -45,7 +44,7 @@ export function SiteHeader() {
 
         <button
           type="button"
-          className="rounded-lg border border-border p-2 md:hidden"
+          className="grid size-11 place-items-center rounded-lg border border-border md:hidden"
           aria-label="Abrir menu"
           aria-expanded={aberto}
           onClick={() => setAberto((v) => !v)}
@@ -63,7 +62,7 @@ export function SiteHeader() {
               activeOptions={{ exact: item.to === "/" }}
               onClick={() => setAberto(false)}
               activeProps={{ className: "bg-secondary text-secondary-foreground" }}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground"
+              className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground"
             >
               {item.label}
             </Link>

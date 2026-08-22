@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, Lightbulb, Scale, ShieldAlert } from "lucide-react";
+import { ChevronDown, Lightbulb, Scale, ShieldAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,12 +39,12 @@ function ItemAchado({
   return (
     <li className={cn("rounded-lg border p-3 transition-colors", selecionado && "border-primary bg-primary/4")}>
       <div className="flex items-start gap-2">
-        <span className="-m-1.5 grid size-9 flex-none place-items-center">
+        <span className="-m-1.5 grid size-11 flex-none place-items-center">
           <Checkbox
             checked={selecionado}
             onCheckedChange={onAlternar}
             aria-label={`Selecionar requisito ${codigo}`}
-            className="size-[17px] rounded-[4px]"
+            className="relative size-[17px] rounded-[4px] before:absolute before:-inset-[13px] before:content-['']"
           />
         </span>
         <div className="min-w-0 flex-1">
@@ -134,7 +134,7 @@ function GrupoCard({
             checked={marcados === codigos.length && codigos.length > 0}
             onCheckedChange={(v) => onAlternarGrupo(codigos, v === true)}
             aria-label={`Selecionar os ${codigos.length} requisitos de ${grupo.nome}`}
-            className="size-[18px] rounded-[4px]"
+            className="relative size-[18px] rounded-[4px] before:absolute before:-inset-[13px] before:content-['']"
           />
         </span>
 
@@ -143,7 +143,7 @@ function GrupoCard({
           onClick={onAbrir}
           aria-expanded={aberto}
           aria-controls={idPainel}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
         >
           <span
             className={cn(
@@ -223,6 +223,9 @@ export function AchadoList({
   selecionados,
   referencias = {},
   nomeEnte,
+  componente = null,
+  nomesComponentes = {},
+  onLimparComponente,
   onAlternar,
   onSelecionarVarios,
 }: {
@@ -230,6 +233,10 @@ export function AchadoList({
   selecionados: Set<string>;
   referencias?: MapaReferencias;
   nomeEnte?: string;
+  /** Componente escolhido no mapa de calor acima. */
+  componente?: string | null;
+  nomesComponentes?: Record<string, string>;
+  onLimparComponente?: () => void;
   onAlternar: (codigo: string) => void;
   onSelecionarVarios: (codigos: string[]) => void;
 }) {
@@ -244,10 +251,13 @@ export function AchadoList({
 
   const grupos = useMemo(() => {
     const filtrados = achados.filter(
-      (a) => (eixo === TODOS || a.eixo === eixo) && (!soCriticos || ehCritico(a.c)),
+      (a) =>
+        (eixo === TODOS || a.eixo === eixo) &&
+        (!soCriticos || ehCritico(a.c)) &&
+        (!componente || a.c === componente),
     );
     return agruparPorComponente(filtrados);
-  }, [achados, eixo, soCriticos]);
+  }, [achados, eixo, soCriticos, componente]);
 
   const qtdCriticos = useMemo(() => achados.filter((a) => ehCritico(a.c)).length, [achados]);
   const codigosVisiveis = grupos.flatMap((g) => g.itens.map(codigoAchado));
@@ -289,12 +299,31 @@ export function AchadoList({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 text-xs"
+          className="h-11 text-xs"
           onClick={() => onSelecionarVarios(todosMarcados ? [] : codigosVisiveis)}
         >
           {todosMarcados ? "Limpar seleção" : "Selecionar todos"}
         </Button>
       </div>
+
+      {componente && (
+        <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-accent/40 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">Filtrado pelo mapa:</span>
+          <strong className="font-semibold">
+            {componente} — {nomesComponentes[componente] ?? componente}
+          </strong>
+          {onLimparComponente && (
+            <button
+              type="button"
+              onClick={onLimparComponente}
+              className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-xs font-semibold text-primary hover:bg-accent"
+            >
+              <X className="size-3.5" aria-hidden />
+              Ver todos
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar achados">
         {eixos.map((e) => (
@@ -302,7 +331,7 @@ export function AchadoList({
             key={e}
             size="sm"
             variant={eixo === e ? "default" : "outline"}
-            className="h-7 rounded-full px-3 text-xs"
+            className="h-11 rounded-full px-4 text-xs"
             aria-pressed={eixo === e}
             onClick={() => setEixo(e)}
           >
@@ -313,7 +342,7 @@ export function AchadoList({
           <Button
             size="sm"
             variant={soCriticos ? "destructive" : "outline"}
-            className="h-7 rounded-full px-3 text-xs"
+            className="h-11 rounded-full px-4 text-xs"
             aria-pressed={soCriticos}
             onClick={() => setSoCriticos((v) => !v)}
           >
