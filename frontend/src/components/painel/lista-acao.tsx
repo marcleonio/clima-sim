@@ -108,7 +108,7 @@ export function ListaAcao({
   if (!prioridades.length) {
     return (
       <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-        Nenhum componente com lacuna neste recorte.
+        Nenhum componente com item sem progresso neste recorte.
       </p>
     );
   }

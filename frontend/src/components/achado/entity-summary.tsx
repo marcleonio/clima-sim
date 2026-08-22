@@ -135,7 +135,7 @@ export function EntitySummary({
             </span>
             <div className="pb-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-lime-300">
-                Maturidade climática
+                Pontuação geral
               </p>
               <p className="mt-0.5 text-xs text-white/60">
                 {acima ? "▲" : "▼"} {distancia.toFixed(1).replace(".", ",")} pontos{" "}

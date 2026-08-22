@@ -101,6 +101,15 @@ export function filtrarTerritorio(
 
 export interface ResumoNacional {
   entes: number;
+  /**
+   * Requisitos em cada degrau da escala oficial:
+   * [Sem progresso, Estágio inicial, Estágio intermediário, Estágio avançado].
+   *
+   * É o que transforma "640 de 2.245" numa forma. O número sozinho não
+   * distingue um recorte onde tudo está zerado de outro onde muita coisa já
+   * começou — e essa diferença é a decisão inteira de quem produz política.
+   */
+  degraus: [number, number, number, number];
   /** Soma da população sob jurisdição dos entes do recorte. */
   populacao: number;
   requisitos: number;
@@ -132,8 +141,16 @@ export function resumirTerritorio(
   const lacunas = selecionados.reduce((s, [, e]) => s + e.lac, 0);
   const somaMat = selecionados.reduce((s, [, e]) => s + e.mat, 0);
 
+  const degraus: [number, number, number, number] = [0, 0, 0, 0];
+  for (const [, e] of selecionados) {
+    for (const r of Object.values(e.comps)) {
+      for (let i = 0; i < 4; i += 1) degraus[i]! += r.d[i] ?? 0;
+    }
+  }
+
   return {
     entes: selecionados.length,
+    degraus,
     populacao: paraPopulacao.reduce((s, [, e]) => s + (e.pop ?? 0), 0),
     requisitos,
     lacunas,
@@ -175,4 +192,27 @@ export function lacunasPorComponente(
   }
 
   return [...mapa.values()].sort((a, b) => b.lacunas - a.lacunas || a.c.localeCompare(b.c));
+}
+
+/**
+ * Onde cada ente cai na régua de maturidade.
+ *
+ * Serve à faixa de distribuição: uma média sozinha esconde se o recorte é
+ * homogêneo ou se tem dois grupos em extremos opostos — e essas duas situações
+ * pedem ações completamente diferentes.
+ */
+export function distribuicaoDeMaturidade(
+  selecionados: [string, EnteResumo][],
+): { nome: string; maturidade: number }[] {
+  return selecionados
+    .map(([nome, e]) => ({ nome, maturidade: e.mat }))
+    .sort((a, b) => a.maturidade - b.maturidade);
+}
+
+/** Os entes sem nenhuma lacuna. Três nomes valem mais que o número três. */
+export function entesSemLacuna(selecionados: [string, EnteResumo][]): string[] {
+  return selecionados
+    .filter(([, e]) => e.lac === 0)
+    .map(([nome]) => nome)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }

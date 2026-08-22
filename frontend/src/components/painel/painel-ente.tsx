@@ -97,19 +97,19 @@ export function PainelEnte({
             acima ? "text-[var(--sev-ok)]" : "text-[var(--sev-critico)]",
           )}
         >
-          {acima ? "▲" : "▼"} {Math.abs(distancia).toFixed(1).replace(".", ",")} pts
+          {acima ? "▲" : "▼"} {Math.abs(distancia).toFixed(1).replace(".", ",")} p.p.
           <span className="block font-normal text-muted-foreground">vs. país</span>
         </span>
       </div>
 
       <div className="mt-3 border-t pt-3">
-        <Barra rotulo="Sem progresso" valor={ente.lac} total={ente.tot} />
+        <Barra rotulo="Itens sem progresso" valor={ente.lac} total={ente.tot} />
       </div>
 
       {piores.length > 0 && (
         <div className="mt-3 min-h-0 flex-1 border-t pt-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Mais frágeis
+            Menores pontuações
           </p>
           <ul className="mt-1.5 space-y-1">
             {piores.map(([c, r]) => (

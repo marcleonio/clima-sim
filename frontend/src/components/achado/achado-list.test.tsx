@@ -58,7 +58,7 @@ describe("AchadoList", () => {
   it("mostra o estado vazio quando o ente não tem lacunas", () => {
     montar({ achados: [] });
 
-    expect(screen.getByText(/nenhum requisito sem progresso/i)).toBeInTheDocument();
+    expect(screen.getByText(/nenhum item sem progresso/i)).toBeInTheDocument();
   });
 
   it("mantém o parecer da auditoria oculto até o usuário abrir o achado", async () => {
@@ -87,7 +87,7 @@ describe("AchadoList", () => {
     const { onAlternar } = montar();
 
     await user.click(screen.getByRole("button", { name: /defesa civil/i }));
-    await user.click(screen.getByRole("checkbox", { name: /selecionar requisito P5A/i }));
+    await user.click(screen.getByRole("checkbox", { name: /selecionar o item P5A/i }));
 
     expect(onAlternar).toHaveBeenCalledWith("P5A");
   });
@@ -120,7 +120,7 @@ describe("AchadoList", () => {
     await user.click(screen.getByRole("button", { name: "Financiamento" }));
     await user.click(screen.getByRole("button", { name: /risco de vida/i }));
 
-    expect(screen.getByText(/nenhum achado com esses filtros/i)).toBeInTheDocument();
+    expect(screen.getByText(/nenhum item com esses filtros/i)).toBeInTheDocument();
   });
 
   it("não oferece o filtro de risco de vida quando não há requisito crítico", () => {

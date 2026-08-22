@@ -82,11 +82,11 @@ export const Route = createFileRoute("/achados")({
   loader: ({ deps }) => (deps.ente ? carregarDossie(deps.ente) : null),
   head: () => ({
     meta: [
-      { title: "Achado Climático — do dado público à peça de cobrança" },
+      { title: "Itens de avaliação — do dado público à peça de cobrança" },
       {
         name: "description",
         content:
-          "Consulte as lacunas de ação climática do seu estado ou capital e gere ofícios, requerimentos e planos de providências prontos para protocolar.",
+          "Consulte os itens de avaliação sem progresso do seu estado ou capital e gere ofícios, requerimentos e planos de providências prontos para protocolar.",
       },
     ],
   }),
@@ -219,7 +219,7 @@ function AchadosPage() {
     qtdSelecionada === 0
       ? `todos os ${ente?.achados.length ?? 0} achados`
       : qtdSelecionada === 1
-        ? "1 achado"
+        ? "1 item"
         : `${qtdSelecionada} achados`;
 
   const pecas = documentosPara(perfil);

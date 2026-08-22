@@ -20,10 +20,8 @@ export const Route = createFileRoute("/impacto")({
           "Gestores públicos, órgãos de controle e sociedade civil usando a mesma evidência de auditoria sobre política climática.",
       },
       { property: "og:type", content: "article" },
-      { property: "og:url", content: "https://policy-effect-simulator.lovable.app/impacto" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://policy-effect-simulator.lovable.app/impacto" }],
   }),
   component: Impacto,
 });

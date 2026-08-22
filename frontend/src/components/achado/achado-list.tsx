@@ -4,6 +4,7 @@ import { ChevronDown, Lightbulb, Scale, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { contarSemProgresso } from "@/lib/vocabulario";
 import {
   agruparPorComponente,
   codigoAchado,
@@ -43,7 +44,7 @@ function ItemAchado({
           <Checkbox
             checked={selecionado}
             onCheckedChange={onAlternar}
-            aria-label={`Selecionar requisito ${codigo}`}
+            aria-label={`Selecionar o item ${codigo}`}
             className="relative size-[17px] rounded-[4px] before:absolute before:-inset-[13px] before:content-['']"
           />
         </span>
@@ -86,7 +87,7 @@ function ItemAchado({
                 </div>
               ))}
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Prática registrada pela auditoria em ente com “Estágio avançado” no mesmo requisito.
+                Prática registrada pela auditoria em ente com “Estágio avançado” no mesmo item.
                 Referência a adaptar, não modelo a copiar.
               </p>
             </div>
@@ -133,7 +134,7 @@ function GrupoCard({
           <Checkbox
             checked={marcados === codigos.length && codigos.length > 0}
             onCheckedChange={(v) => onAlternarGrupo(codigos, v === true)}
-            aria-label={`Selecionar os ${codigos.length} requisitos de ${grupo.nome}`}
+            aria-label={`Selecionar os ${codigos.length} itens de ${grupo.nome}`}
             className="relative size-[18px] rounded-[4px] before:absolute before:-inset-[13px] before:content-['']"
           />
         </span>
@@ -160,7 +161,7 @@ function GrupoCard({
               {critico && (
                 <ShieldAlert
                   className="size-3.5 flex-none text-destructive"
-                  aria-label="Requisito com impacto direto sobre vidas"
+                  aria-label="Item com impacto direto sobre vidas"
                 />
               )}
             </span>
@@ -168,7 +169,7 @@ function GrupoCard({
               <span className="uppercase tracking-wide">{grupo.eixo}</span>
               <span aria-hidden>·</span>
               <span className="font-semibold text-destructive">
-                {grupo.itens.length} {grupo.itens.length === 1 ? "item sem progresso" : "itens sem progresso"}
+                {contarSemProgresso(grupo.itens.length)}
               </span>
               {marcados > 0 && (
                 <>
@@ -195,7 +196,7 @@ function GrupoCard({
             <div className="rounded-lg bg-destructive/8 p-2.5">
               <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-destructive">
                 <Scale className="size-3" aria-hidden />
-                Base normativa do requisito
+                Base normativa do componente
               </p>
               <p className="mt-1 text-xs leading-relaxed">{grupo.lei}</p>
             </div>
@@ -276,9 +277,9 @@ export function AchadoList({
   if (!achados.length) {
     return (
       <div className="rounded-xl border border-dashed bg-card p-8 text-center">
-        <p className="text-sm font-medium">Nenhum requisito sem progresso</p>
+        <p className="text-sm font-medium">Nenhum item sem progresso</p>
         <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-          Este ente não apresenta lacunas nesta safra de avaliação — não há o que encaminhar.
+          Todos os itens avaliados registraram alguma ação — não há o que encaminhar.
         </p>
       </div>
     );
@@ -289,11 +290,11 @@ export function AchadoList({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="lista-achados" className="text-base font-bold">
-            Achados agrupados por requisito
+            Itens de avaliação por componente
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {grupos.length} {grupos.length === 1 ? "requisito" : "requisitos"} ·{" "}
-            {codigosVisiveis.length} {codigosVisiveis.length === 1 ? "item" : "itens"} sem progresso
+            {grupos.length} {grupos.length === 1 ? "componente" : "componentes"} ·{" "}
+            {contarSemProgresso(codigosVisiveis.length)}
           </p>
         </div>
         <Button
@@ -354,7 +355,7 @@ export function AchadoList({
 
       {grupos.length === 0 ? (
         <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Nenhum achado com esses filtros.
+          Nenhum item com esses filtros.
         </p>
       ) : (
         <ul className="space-y-2">

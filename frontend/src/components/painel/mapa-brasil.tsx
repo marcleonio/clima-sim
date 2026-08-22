@@ -99,7 +99,7 @@ export function MapaBrasil({
         preserveAspectRatio="xMidYMid meet"
         className="h-full max-h-full w-full"
         role="img"
-        aria-label={`Mapa do Brasil com ${porUf.size} unidades federativas e ${porMunicipio.size} capitais avaliadas, coloridas pela lacuna de ação climática.`}
+        aria-label={`Mapa do Brasil com ${porUf.size} unidades federativas e ${porMunicipio.size} capitais avaliadas, coloridas pela pontuação de ação climática.`}
       >
         <g>
           {Object.entries(MAPA.ufs).map(([codigo, d]) => {
@@ -124,7 +124,7 @@ export function MapaBrasil({
                 role={alvo && onSelecionar ? "button" : undefined}
                 aria-label={
                   alvo
-                    ? `${alvo.nome}: ${alvo.ente.lac} de ${alvo.ente.tot} requisitos sem progresso`
+                    ? `${alvo.nome}: ${alvo.ente.lac} de ${alvo.ente.tot} itens sem progresso`
                     : `${sigla} — não avaliado`
                 }
                 onClick={
@@ -185,7 +185,7 @@ export function MapaBrasil({
                   )}
                   tabIndex={onSelecionar ? 0 : undefined}
                   role={onSelecionar ? "button" : undefined}
-                  aria-label={`${alvo.nome} (capital): ${alvo.ente.lac} de ${alvo.ente.tot} requisitos sem progresso`}
+                  aria-label={`${alvo.nome} (capital): ${alvo.ente.lac} de ${alvo.ente.tot} itens sem progresso`}
                   onClick={
                     onSelecionar
                       ? () => onSelecionar(ativo ? null : alvo.nome)
@@ -229,13 +229,13 @@ export function MapaBrasil({
           <p className="mt-0.5 text-xs text-muted-foreground">{sobre.ente.tipo}</p>
           <dl className="mt-1.5 space-y-0.5 text-xs">
             <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">Sem progresso</dt>
+              <dt className="text-muted-foreground">Itens sem progresso</dt>
               <dd className="font-semibold tabular-nums">
                 {sobre.ente.lac}/{sobre.ente.tot}
               </dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">Maturidade</dt>
+              <dt className="text-muted-foreground">Pontuação</dt>
               <dd className="font-semibold tabular-nums">{formatarPercentual(sobre.ente.mat)}</dd>
             </div>
             {sobre.ente.pop != null && (
@@ -256,7 +256,7 @@ export function LegendaMapa() {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
       <span className="flex items-center gap-2">
-        <span>menos lacuna</span>
+        <span>menor pontuação</span>
         <span className="flex overflow-hidden rounded-sm" aria-hidden>
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <span key={i} className="block size-3.5" style={{ background: `var(--calor-${i})` }} />

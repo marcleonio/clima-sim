@@ -27,9 +27,18 @@ a avaliação de ação climática do Painel ClimaBrasil (TCU) em peças de cobr
 
 A base cobre ${META.total} entes — 26 estados, 24 capitais e o Distrito Federal —
 avaliados em 15 componentes pela metodologia ClimateScanner/INTOSAI. Cada
-requisito recebeu um de quatro degraus: Sem progresso, Estágio inicial, Estágio
-intermediário e Estágio avançado. "Sem progresso" é o que o produto chama de
-lacuna ou achado.
+item recebeu uma de quatro classificações: Sem progresso, Estágio inicial,
+Estágio intermediário e Estágio avançado, valendo 0%, 33%, 67% e 100%. A média
+dessas notas é a PONTUAÇÃO do componente e do ente.
+
+VOCABULÁRIO OBRIGATÓRIO
+
+Use os termos da metodologia oficial, nunca os antigos do produto:
+  "item de avaliação" (nunca "achado")
+  "pontuação", sempre com o símbolo de porcentagem (nunca "maturidade")
+  "item sem progresso" (nunca "lacuna")
+O manual classifica componente com pontuação até 33% como DESAFIO e a partir
+de 67% como PONTO FORTE.
 
 REGRAS QUE NÃO SE NEGOCIAM
 
@@ -42,7 +51,7 @@ REGRAS QUE NÃO SE NEGOCIAM
 
 3. Nunca escreva "população em risco", "pessoas em perigo" ou equivalente. A
    métrica mede lacuna de governança, não risco físico. A formulação correta é
-   "vive sob jurisdição de ente com lacuna no requisito X".
+   "vive sob jurisdição de ente com item sem progresso no componente X".
 
 4. Nunca afirme causalidade entre uma lacuna e um desastre. A avaliação de 2025
    é posterior aos eventos, e coincidência documentada não é causa.
@@ -61,7 +70,7 @@ REGRAS QUE NÃO SE NEGOCIAM
 COMO RESPONDER
 
 Direto, em português do Brasil, sem saudação e sem repetir a pergunta. Números
-com vírgula decimal. Cite o código do requisito (P5A, F1C) quando falar de um.
+com vírgula decimal. Cite o código do item (P5A, F1C) quando falar de um.
 Quando transcrever parecer de auditoria, deixe claro que é citação.`;
 
 const entrada = z.object({

@@ -32,7 +32,7 @@ export interface ResumoEixo {
   t: number;
   /** Requisitos sem progresso. */
   l: number;
-  /** Índice de maturidade 0–100 (média da escala oficial de 4 degraus). */
+  /** Pontuação 0–100: média dos itens na escala oficial (0 / 33 / 67 / 100%). */
   m: number;
 }
 
@@ -214,8 +214,8 @@ export function vereditoDe(
 
   const titulo =
     ente.lac === 0
-      ? `Nenhum requisito sem ação demonstrada em ${nome}.`
-      : `${ente.lac} de ${ente.tot} requisitos sem ação demonstrada em ${nome}.`;
+      ? `Nenhum item sem ação demonstrada em ${nome}.`
+      : `${ente.lac} de ${ente.tot} itens sem ação demonstrada em ${nome}.`;
 
   const distancia = Math.abs(ente.mat - mediaNacional);
   const posicao =
@@ -223,7 +223,7 @@ export function vereditoDe(
       ? `É o ente mais frágil entre os ${totalDeEntes} avaliados no país`
       : `Ocupa a ${ente.rank}ª posição em fragilidade entre os ${totalDeEntes} avaliados`;
   const contexto =
-    `${posicao}, com índice de maturidade ${formatarPercentual(ente.mat)} — ` +
+    `${posicao}, com pontuação ${formatarPercentual(ente.mat)} — ` +
     `${distancia.toFixed(1).replace(".", ",")} pontos ` +
     `${ente.mat >= mediaNacional ? "acima" : "abaixo"} da média nacional.`;
 

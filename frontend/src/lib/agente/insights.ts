@@ -49,7 +49,7 @@ export function insightsDoEnte(nome: string, ente: EnteResumo): Insight[] {
     const nomes = criticos.map((x) => META.componentes[x.c] ?? x.c).join(" e ");
     achados.push({
       texto:
-        `Há lacuna em ${nomes}` +
+        `Há item sem progresso em ${nomes}` +
         (ente.pop ? `, em jurisdição com ${formatarNumero(ente.pop)} habitantes.` : "."),
       tom: "critico",
       seguir: `Quem já resolveu ${criticos[0]!.c} e o que fez?`,
@@ -67,7 +67,7 @@ export function insightsDoEnte(nome: string, ente: EnteResumo): Insight[] {
     const parciais = (melhor.r.d[1] ?? 0) + (melhor.r.d[2] ?? 0);
     achados.push({
       texto:
-        `Em ${META.componentes[melhor.c] ?? melhor.c}, ${parciais} de ${melhor.r.t} requisitos ` +
+        `Em ${META.componentes[melhor.c] ?? melhor.c}, ${parciais} de ${melhor.r.t} itens ` +
         `já saíram do zero — é onde o próximo degrau custa menos.`,
       tom: "ok",
       seguir: `O que já foi feito em ${melhor.c} neste ente?`,
@@ -101,8 +101,8 @@ export function insightsDoEnte(nome: string, ente: EnteResumo): Insight[] {
     achados.push({
       texto:
         ente.lac === 0
-          ? "Nenhum requisito sem ação demonstrada nesta safra de avaliação."
-          : `${formatarPercentual(taxa, 0)} dos requisitos sem ação demonstrada — ` +
+          ? "Nenhum item sem ação demonstrada nesta safra de avaliação."
+          : `${formatarPercentual(taxa, 0)} dos itens sem ação demonstrada — ` +
             `${ente.rank}ª posição em fragilidade entre ${META.total}.`,
       tom: ente.lac === 0 ? "ok" : taxa >= 45 ? "critico" : "atencao",
     });
@@ -126,10 +126,10 @@ export function insightsDoRecorte(selecionados: [string, EnteResumo][]): Insight
   if (pior && pior[1].lac > 0) {
     insights.push({
       texto:
-        `${pior[0]} é o mais frágil deste recorte: ${pior[1].lac} de ${pior[1].tot} requisitos ` +
+        `${pior[0]} é o mais frágil deste recorte: ${pior[1].lac} de ${pior[1].tot} itens ` +
         `sem ação demonstrada.`,
       tom: "critico",
-      seguir: `Quais são os achados de ${pior[0]}?`,
+      seguir: `Quais itens de ${pior[0]} estão sem progresso?`,
     });
   }
 
@@ -137,7 +137,7 @@ export function insightsDoRecorte(selecionados: [string, EnteResumo][]): Insight
     insights.push({
       texto:
         `${semLacuna.length} ${semLacuna.length === 1 ? "ente não tem" : "entes não têm"} nenhuma ` +
-        `lacuna: ${semLacuna.slice(0, 3).map(([n]) => n).join(", ")}` +
+        `item sem progresso: ${semLacuna.slice(0, 3).map(([n]) => n).join(", ")}` +
         (semLacuna.length > 3 ? " e outros." : "."),
       tom: "ok",
       seguir: "O que esses entes fizeram de diferente?",
@@ -150,7 +150,7 @@ export function insightsDoRecorte(selecionados: [string, EnteResumo][]): Insight
 /** Perguntas de partida, quando não há contexto de tela nenhum. */
 export const PERGUNTAS_INICIAIS = [
   "Por onde um tribunal de contas deveria começar?",
-  "Quais entes têm lacuna em defesa civil?",
+  "Quais entes estão sem progresso em defesa civil?",
   "Onde se avança mais com menos esforço?",
   "Compare São Paulo (estado) com Rio de Janeiro (estado).",
 ];

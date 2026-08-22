@@ -11,7 +11,7 @@ export const Route = createFileRoute("/metodologia")({
       {
         name: "description",
         content:
-          "Como o ClimaSim transforma os pareceres de auditoria do Painel ClimaBrasil em achados, priorização multicritério e peças administrativas prontas para protocolar.",
+          "Como o ClimaSim transforma os pareceres de auditoria do Painel ClimaBrasil em itens de avaliação, priorização multicritério e peças administrativas prontas para protocolar.",
       },
       { property: "og:title", content: "Metodologia — ClimaSim" },
       {
@@ -20,7 +20,6 @@ export const Route = createFileRoute("/metodologia")({
           "Base oficial do TCU, escala de quatro degraus, priorização multicritério decomponível e trajetória por aritmética da escala.",
       },
       { property: "og:type", content: "article" },
-      { property: "og:url", content: "https://policy-effect-simulator.lovable.app/metodologia" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
@@ -38,7 +37,7 @@ const ETAPAS = [
     Icon: Sigma,
     titulo: "2. A escala de quatro degraus",
     texto:
-      "Cada requisito recebe Sem progresso, Estágio inicial, Estágio intermediário ou Estágio avançado, valendo 0, 1/3, 2/3 e 1. O índice do ente é a média desses valores. Um requisito em “Sem progresso” é o que chamamos de achado.",
+      "Cada item de avaliação recebe Sem progresso, Estágio inicial, Estágio intermediário ou Estágio avançado, valendo 0%, 33%, 67% e 100%. A média dessas notas é a pontuação do componente e do ente — o manual chama de desafio o componente até 33% e de ponto forte o que passa de 67%.",
   },
   {
     Icon: Workflow,

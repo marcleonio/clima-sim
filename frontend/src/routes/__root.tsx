@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Consulte as lacunas de ação climática de estados e capitais brasileiros e gere ofícios, requerimentos e planos de providências prontos para protocolar.",
+          "Consulte os itens de avaliação sem progresso de estados e capitais brasileiros e gere ofícios, requerimentos e planos de providências prontos para protocolar.",
       },
       { name: "author", content: "ClimaSim" },
       { property: "og:site_name", content: "ClimaSim" },

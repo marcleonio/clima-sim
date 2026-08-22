@@ -88,6 +88,7 @@ function Celula({
         <span className="font-mono text-xs font-bold tracking-wide">{c}</span>
         <span className="text-lg font-bold leading-none tabular-nums">
           {Math.round(maturidade)}
+          <span className="text-xs font-semibold opacity-70">%</span>
         </span>
       </span>
 
@@ -95,7 +96,7 @@ function Celula({
 
       <span className="mt-2 flex items-center gap-1 text-xs">
         <span className="font-bold">
-          {acima ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}
+          {acima ? "▲" : "▼"} {Math.abs(delta).toFixed(0)} p.p.
         </span>
         <span className="opacity-80">vs país</span>
       </span>
@@ -110,7 +111,7 @@ function Celula({
       <span
         className="absolute inset-x-0 bottom-0 block h-1.5 bg-black/10 dark:bg-white/10"
         role="img"
-        aria-label={`Maturidade ${Math.round(maturidade)} de 100`}
+        aria-label={`Pontuação ${Math.round(maturidade)}%`}
       >
         <span
           className="block h-full transition-[width]"
@@ -159,7 +160,7 @@ function Celula({
         style={estiloDoDegrau(degrau)}
       >
         <span className="sr-only">
-          {selecionado ? "Remover filtro de" : "Filtrar os achados por"} {nome}.{" "}
+          {selecionado ? "Remover filtro de" : "Filtrar os itens por"} {nome}.{" "}
         </span>
         {miolo}
       </button>
@@ -198,8 +199,9 @@ function ListaCompacta({
                 {celula.lacunas}/{celula.total}
               </span>
             )}
-            <span className="w-8 flex-none text-right text-sm font-bold tabular-nums">
+            <span className="w-10 flex-none text-right text-sm font-bold tabular-nums">
               {Math.round(celula.maturidade)}
+              <span className="text-xs font-semibold opacity-70">%</span>
             </span>
           </>
         );
@@ -264,13 +266,13 @@ export function ComponenteHeatmap({
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
           <h2 id="mapa-componentes" className="text-base font-bold">
-            Mapa de maturidade
+            Pontuação por componente
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {usarGrade
-              ? "Os 15 componentes oficiais, do mais frágil ao mais maduro. Quanto mais escuro, maior a lacuna."
+              ? "Os 15 componentes oficiais, da menor para a maior pontuação. Quanto mais escuro, menor a pontuação."
               : "Os 15 componentes variam pouco entre si neste ente — a lista diz o mesmo que a grade."}
-            {selecionar && comFiltro.length > 0 && " Só os componentes com achado são filtráveis."}
+            {selecionar && comFiltro.length > 0 && " Só os componentes com item sem progresso são filtráveis."}
           </p>
         </div>
 

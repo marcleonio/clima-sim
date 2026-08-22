@@ -317,7 +317,7 @@ describe("vereditoDe", () => {
       46.9,
     );
 
-    expect(v.titulo).toBe("43 de 44 requisitos sem ação demonstrada em Boa Vista.");
+    expect(v.titulo).toBe("43 de 44 itens sem ação demonstrada em Boa Vista.");
   });
 
   it("troca a contagem por uma afirmação limpa quando não há lacuna", () => {
@@ -328,7 +328,7 @@ describe("vereditoDe", () => {
       46.9,
     );
 
-    expect(v.titulo).toBe("Nenhum requisito sem ação demonstrada em Minas Gerais.");
+    expect(v.titulo).toBe("Nenhum item sem ação demonstrada em Minas Gerais.");
     expect(v.alerta).toBeNull();
   });
 

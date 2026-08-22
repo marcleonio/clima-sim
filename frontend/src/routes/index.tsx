@@ -34,53 +34,58 @@ export const Route = createFileRoute("/")({
           "De dados estáticos de auditoria a uma ferramenta viva de planejamento público, com projeções até 2028 e alertas de trade-off.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://policy-effect-simulator.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://policy-effect-simulator.lovable.app/" }],
   }),
   component: Landing,
 });
 
+/** Os três eixos da metodologia oficial, com o que cada um cobre. */
 const EIXOS = [
   {
     Icon: Banknote,
-    titulo: "Financiamento climático",
+    titulo: "Financiamento",
     texto:
-      "Orçamento, captação de recursos verdes e capacidade real de absorver o repasse disponível.",
+      "Finanças e gastos públicos, captação de recursos e mobilização de investimento privado. É o eixo mais frágil do país.",
   },
   {
     Icon: ShieldCheck,
-    titulo: "Governança & transparência",
-    texto: "Instituições, dados abertos, controle interno e maturidade institucional do ente.",
+    titulo: "Governança",
+    texto:
+      "Quadro legal, estrutura de governo, gestão de riscos, coordenação, participação social, justiça climática e atuação do Legislativo.",
   },
   {
     Icon: ScrollText,
-    titulo: "Execução de políticas",
-    texto: "Entrega efetiva dos programas climáticos e continuidade ao longo do mandato.",
+    titulo: "Políticas públicas",
+    texto:
+      "Estratégias de mitigação e adaptação, políticas correspondentes e defesa civil — os itens que respondem por vidas em evento extremo.",
   },
 ];
 
 const FUNCIONALIDADES = [
   {
     Icon: Gauge,
-    titulo: "Sliders de cenário",
-    texto: "Variação percentual de -100% a +100% em cada eixo, com recálculo imediato.",
-  },
-  {
-    Icon: LineChart,
-    titulo: "Projeção do mandato",
-    texto: "Séries temporais interpoladas ano a ano até o fim do ciclo de governo.",
-  },
-  {
-    Icon: TriangleAlert,
-    titulo: "Trade-offs automáticos",
-    texto: "Matriz de impacto cruzado com alertas de ganho, perda, risco e efeito neutro.",
+    titulo: "Painel nacional",
+    texto:
+      "Mapa dos 51 entes com filtro cruzado por tipo, região, eixo e componente. Todo recorte vira link compartilhável.",
   },
   {
     Icon: BarChart3,
-    titulo: "KPIs de decisão",
-    texto: "Absorção, ROI climático, maturidade relativa e risco de descontinuidade.",
+    titulo: "Por onde começar",
+    texto:
+      "Índice multicritério que ordena onde atuar, decomposto critério a critério — nenhum número sai de caixa-preta.",
+  },
+  {
+    Icon: ScrollText,
+    titulo: "O parecer do auditor",
+    texto:
+      "Os 2.245 pareceres técnicos escritos pelos tribunais de contas, na íntegra. O painel público mostra só a nota.",
+  },
+  {
+    Icon: LineChart,
+    titulo: "Peça pronta para protocolar",
+    texto:
+      "Ofício, requerimento de acesso à informação, plano de providências ou requerimento legislativo, com código de conferência.",
   },
 ];
 
@@ -89,7 +94,7 @@ const PUBLICOS = [
     Icon: Building2,
     titulo: "Gestores públicos",
     texto:
-      "Estados, municípios e União simulam cenários orçamentários antes de comprometer o PPA e a LOA.",
+      "Estados, municípios e União veem o que a auditoria registrou e estruturam a resposta ao controle externo.",
   },
   {
     Icon: ShieldCheck,

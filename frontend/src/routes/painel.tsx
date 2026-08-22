@@ -291,21 +291,21 @@ function PainelPage() {
           >
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Numero
-                rotulo="Sem progresso"
+                rotulo="Itens sem progresso"
                 bruto={resumo.lacunas}
                 formatar={(v) => formatarNumero(Math.round(v))}
                 nota={`de ${formatarNumero(resumo.requisitos)}`}
                 tom="critico"
               />
               <Numero
-                rotulo="Maturidade média"
+                rotulo="Pontuação média"
                 bruto={resumo.maturidade}
                 casas={1}
                 formatar={(v) => formatarPercentual(v)}
                 nota={`país ${formatarPercentual(META.nacional.mat)}`}
               />
               <Numero
-                rotulo="Sem nenhuma lacuna"
+                rotulo="Sem itens pendentes"
                 bruto={resumo.semLacuna}
                 formatar={(v) => String(Math.round(v))}
                 nota={`de ${resumo.entes}`}
@@ -347,25 +347,25 @@ function PainelPage() {
 
         <div className="space-y-4">
           <section
-            aria-label="Requisitos que protegem vidas"
+            aria-label="Itens que protegem vidas"
             className="rounded-xl border-2 border-[var(--sev-critico)]/40 bg-[var(--sev-critico-bg)] p-4"
           >
             <p className="text-sm font-bold text-[var(--sev-critico)]">
-              Requisitos que protegem vidas
+              Itens que protegem vidas
             </p>
             <dl className="mt-2 space-y-2 text-sm">
               <div>
-                <dt className="text-muted-foreground">Sob jurisdição com lacuna em adaptação (P2)</dt>
+                <dt className="text-muted-foreground">Sob jurisdição com item sem progresso em adaptação (P2)</dt>
                 <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP2)}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Sob jurisdição com lacuna em defesa civil (P5)</dt>
+                <dt className="text-muted-foreground">Sob jurisdição com item sem progresso em defesa civil (P5)</dt>
                 <dd className="text-lg font-bold tabular-nums">{formatarNumero(popP5)}</dd>
               </div>
             </dl>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               Mede lacuna de governança, não risco físico: a formulação é “vive sob jurisdição de
-              ente com lacuna no requisito”, nunca “está em risco”.
+              ente com item sem progresso”, nunca “está em risco”.
             </p>
           </section>
 
@@ -374,7 +374,7 @@ function PainelPage() {
             className="rounded-xl border bg-card p-4 shadow-sm"
           >
             <h2 id="barras-componentes" className="text-base font-bold">
-              Lacunas por componente
+              Itens sem progresso por componente
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">Toque para filtrar o painel.</p>
 

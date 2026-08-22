@@ -114,7 +114,9 @@ describe("ComponenteHeatmap", () => {
     render(<ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />);
 
     expect(screen.getByText("17")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /maturidade 17 de 100/i })).toBeInTheDocument();
+    // a porcentagem agora aparece junto do numero, num span proprio
+    expect(screen.getAllByText("%").length).toBeGreaterThan(0);
+    expect(screen.getByRole("img", { name: /pontuação 17%/i })).toBeInTheDocument();
     expect(screen.getByText("1/2 sem progresso")).toBeInTheDocument();
   });
 
@@ -129,7 +131,7 @@ describe("ComponenteHeatmap", () => {
     const { rerender } = render(
       <ComponenteHeatmap ente={ente(VARIADO)} nomes={NOMES} nacional={NACIONAL} />,
     );
-    expect(screen.getByText(/do mais frágil ao mais maduro/i)).toBeInTheDocument();
+    expect(screen.getByText(/da menor para a maior pontuação/i)).toBeInTheDocument();
 
     rerender(<ComponenteHeatmap ente={ente(UNIFORME)} nomes={NOMES} nacional={NACIONAL} />);
     expect(screen.getByText(/variam pouco entre si/i)).toBeInTheDocument();
