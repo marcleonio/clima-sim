@@ -41,6 +41,7 @@ import {
   type Regiao,
   type TipoEnte,
 } from "@/lib/territorio";
+import { buscarContexto, CORPUS } from "@/lib/corpus";
 import { comunidadeDe, listar, pontesPara, vizinhosDe } from "@/lib/grafo";
 import { descreverTrajetoria, posicaoProjetada, projetar } from "@/lib/trajetoria";
 import referenciasBrutas from "@/data/referencias.json";
@@ -187,6 +188,19 @@ export const esquemas = {
     required: ["ente"],
     additionalProperties: false,
   },
+
+  buscar_contexto: {
+    type: "object",
+    properties: {
+      componente: COMPONENTE,
+      termo: {
+        type: "string",
+        description: "Palavras-chave do que se quer entender. Opcional.",
+      },
+    },
+    required: ["componente"],
+    additionalProperties: false,
+  },
 } as const;
 
 // Entradas de cada ferramenta, escritas à mão para não depender do Zod.
@@ -201,6 +215,7 @@ interface EntradaPrecedente { componente: string; item?: string }
 interface EntradaProjecao { ente: string; requisitos: number }
 interface EntradaQuaseLa { ente: string; limite?: number }
 interface EntradaVizinhos { ente: string }
+interface EntradaContexto { componente: string; termo?: string }
 
 // ------------------------------------------------------------------ execução
 
@@ -510,6 +525,52 @@ export const ferramentas = {
       "semelhança de padrão de falha por cosseno sobre o vetor de déficit — não é causa comum, contágio nem característica regional",
     );
   },
+
+  /**
+   * Contexto sobre um COMPONENTE — nunca sobre um ente.
+   *
+   * Prateleira separada da evidência, e a separação não é estilística: se
+   * contexto e parecer de auditoria entrarem no mesmo balaio, o produto perde o
+   * que o torna defensável. O retorno vem marcado como `natureza: "contexto"` e
+   * com a instrução de como apresentá-lo, porque o modelo precisa ser lembrado
+   * disso a cada chamada.
+   */
+  async buscar_contexto({ componente: comp, termo }: EntradaContexto) {
+    const achados = buscarContexto(comp, termo ?? "", 3);
+
+    if (!achados.length) {
+      return responder({
+        natureza: "contexto" as const,
+        componente: comp,
+        encontrados: 0,
+        explicacao: `Não há documento de contexto indexado para ${comp}. Responda com a evidência da base e diga que não há literatura no corpus para embasar hipótese.`,
+      });
+    }
+
+    return responder(
+      {
+        natureza: "contexto" as const,
+        componente: comp,
+        nomeComponente: META.componentes[comp] ?? comp,
+        encontrados: achados.length,
+        documentos: achados.map((a) => ({
+          titulo: a.documento.titulo,
+          fonte: a.documento.fonte,
+          data: a.documento.data,
+          tipoDeFonte: a.documento.tipo,
+          url: a.documento.url,
+          trecho: a.documento.texto === a.trecho ? a.trecho : a.trecho,
+        })),
+        comoApresentar:
+          "Isto NÃO é evidência sobre nenhum ente. Use a estrutura de quatro blocos: " +
+          "EVIDÊNCIA (o que a base registra, com o código do item) · " +
+          "HIPÓTESE (o que este contexto sugere que possa estar associado, com fonte e data) · " +
+          "COMO VERIFICAR (que documento pedir, que pergunta fazer no ofício) · " +
+          "O QUE ISSO NÃO PROVA (a ressalva, por extenso).",
+      },
+      `corpus curado com corte em ${CORPUS.meta.corteDeData} — sustenta linha de investigação, nunca afirmação de fato sobre um ente`,
+    );
+  },
 };
 
 export type NomeFerramenta = keyof typeof ferramentas;
@@ -534,6 +595,8 @@ export const DESCRICOES: Record<NomeFerramenta, string> = {
     "Requisitos do ente que já saíram do zero e estão a um degrau de avançar, com o parecer. Use para perguntas sobre onde é mais fácil avançar.",
   vizinhos_semelhantes:
     "Entes com o mesmo formato de fragilidade que este, e quais deles já resolveram algo que ele ainda não. Use para responder 'quem tem o meu problema e já resolveu' e para sugerir a quem perguntar.",
+  buscar_contexto:
+    "Contexto sobre um COMPONENTE — orientação oficial da metodologia, literatura e cobertura. NÃO é evidência sobre nenhum ente: serve para montar linha de investigação. Use quando perguntarem o que se esperava naquele requisito ou o que pode estar por trás de uma omissão.",
 };
 
 /** Quantas ferramentas o agente tem. Usado no teste que trava a lista. */
