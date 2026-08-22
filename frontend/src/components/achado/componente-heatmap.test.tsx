@@ -143,6 +143,20 @@ describe("ComponenteHeatmap", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  /**
+   * A célula da grade, distinguida do atalho de filtro que tem o mesmo nome.
+   * O código vem do primeiro `.font-mono` — o texto do botão começa com o
+   * rótulo de leitor de tela, não com o código.
+   */
+  const celulaDe = (codigo: string) =>
+    screen
+      .getAllByRole("button")
+      .find(
+        (b) =>
+          b.className.includes("pb-4") &&
+          b.querySelector(".font-mono")?.textContent?.trim() === codigo,
+      );
+
   it("com onFiltrar, clicar numa célula filtra por ela e clicar de novo limpa", async () => {
     const aoFiltrar = vi.fn();
     const usuario = userEvent.setup();
@@ -156,7 +170,7 @@ describe("ComponenteHeatmap", () => {
       />,
     );
 
-    await usuario.click(screen.getByRole("button", { name: /Mobilização de investimentos/i }));
+    await usuario.click(celulaDe("F3"));
     expect(aoFiltrar).toHaveBeenCalledWith("F3");
 
     // já filtrado por F3, o mesmo clique limpa
@@ -169,7 +183,7 @@ describe("ComponenteHeatmap", () => {
         onFiltrar={aoFiltrar}
       />,
     );
-    await usuario.click(screen.getByRole("button", { name: /Mobilização de investimentos/i }));
+    await usuario.click(celulaDe("F3"));
     expect(aoFiltrar).toHaveBeenLastCalledWith(null);
   });
 
@@ -184,7 +198,40 @@ describe("ComponenteHeatmap", () => {
       />,
     );
 
-    const alvo = screen.getByRole("button", { name: /Mobilização de investimentos/i });
-    expect(alvo).toHaveAttribute("aria-pressed", "true");
+    expect(celulaDe("F3")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("componente sem lacuna não vira botão — clicar nele levaria a lista vazia", () => {
+    // Em VARIADO só F3 tem lacuna; P5 e G1 não têm.
+    render(
+      <ComponenteHeatmap
+        ente={ente(VARIADO)}
+        nomes={NOMES}
+        nacional={NACIONAL}
+        onFiltrar={vi.fn()}
+      />,
+    );
+
+    expect(celulaDe("F3")).toBeDefined();
+    expect(celulaDe("P5")).toBeUndefined();
+    expect(celulaDe("G1")).toBeUndefined();
+  });
+
+  it("oferece atalho de filtro apenas para os componentes com achado", () => {
+    render(
+      <ComponenteHeatmap
+        ente={ente(VARIADO)}
+        nomes={NOMES}
+        nacional={NACIONAL}
+        onFiltrar={vi.fn()}
+      />,
+    );
+
+    const atalhos = screen
+      .getAllByRole("button")
+      .filter((b) => b.className.includes("rounded-full"));
+
+    expect(atalhos).toHaveLength(1);
+    expect(atalhos[0]).toHaveTextContent("F3");
   });
 });

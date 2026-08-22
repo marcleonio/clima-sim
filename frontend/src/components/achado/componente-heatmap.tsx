@@ -125,8 +125,18 @@ function Celula({
     selecionado && "ring-2 ring-offset-2 ring-offset-card ring-foreground",
   );
 
-  // Sem ação, não finge ser clicável: o realce de hover só aparece quando há
-  // para onde clicar.
+  /*
+   * Sem ação, não finge ser clicável.
+   *
+   * Antes, as 15 células eram sempre botões — mas um componente sem lacuna não
+   * tem o que filtrar, e clicar nele produzia "0 requisitos, 0 itens sem
+   * progresso". No Rio Grande do Sul isso acontecia em 13 das 15 células: 87%
+   * dos cliques levavam a uma lista vazia.
+   *
+   * A grade continua mostrando os 15 — como MAPA DE MATURIDADE, os componentes
+   * bons são informação. O que muda é que só os que têm lacuna carregam a
+   * função de FILTRO.
+   */
   if (!onSelecionar) {
     return (
       <li className={classe} style={estiloDoDegrau(degrau)}>
@@ -194,9 +204,12 @@ function ListaCompacta({
           </>
         );
 
+        // Mesma regra da grade: sem lacuna, não há o que filtrar.
+        const filtravel = onSelecionar && celula.lacunas > 0;
+
         return (
           <li key={celula.c}>
-            {onSelecionar ? (
+            {filtravel ? (
               <button
                 type="button"
                 onClick={() => onSelecionar(celula.c)}
@@ -239,6 +252,9 @@ export function ComponenteHeatmap({
   const amplitude = amplitudeComponentes(ente.comps);
   const usarGrade = amplitude >= AMPLITUDE_MINIMA_PARA_GRADE;
 
+  /** Só estes têm o que filtrar — os outros levariam a uma lista vazia. */
+  const comFiltro = celulas.filter((c) => c.lacunas > 0);
+
   const selecionar = onFiltrar
     ? (c: string) => onFiltrar(filtro === c ? null : c)
     : undefined;
@@ -254,7 +270,7 @@ export function ComponenteHeatmap({
             {usarGrade
               ? "Os 15 componentes oficiais, do mais frágil ao mais maduro. Quanto mais escuro, maior a lacuna."
               : "Os 15 componentes variam pouco entre si neste ente — a lista diz o mesmo que a grade."}
-            {selecionar && " Toque para filtrar os achados."}
+            {selecionar && comFiltro.length > 0 && " Só os componentes com achado são filtráveis."}
           </p>
         </div>
 
@@ -270,6 +286,43 @@ export function ComponenteHeatmap({
         </div>
       </div>
 
+      {/*
+        O filtro de verdade: apenas os componentes com achado. Fica acima da
+        grade porque é ele que responde "o que dá para filtrar aqui".
+      */}
+      {selecionar && comFiltro.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 border-b pb-3">
+          <span className="text-xs text-muted-foreground">Filtrar por:</span>
+          {comFiltro.map((c) => (
+            <button
+              key={c.c}
+              type="button"
+              onClick={() => selecionar(c.c)}
+              aria-pressed={filtro === c.c}
+              className={cn(
+                "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors",
+                filtro === c.c
+                  ? "border-foreground bg-foreground text-background"
+                  : "hover:border-primary hover:bg-accent/50",
+              )}
+            >
+              <span className="font-mono">{c.c}</span>
+              <span className="max-w-32 truncate font-normal">{c.nome}</span>
+              <span className="tabular-nums opacity-70">{c.lacunas}</span>
+            </button>
+          ))}
+          {filtro && (
+            <button
+              type="button"
+              onClick={() => onFiltrar?.(null)}
+              className="inline-flex min-h-9 items-center rounded-full px-3 text-xs font-semibold text-primary hover:bg-accent"
+            >
+              Ver todos
+            </button>
+          )}
+        </div>
+      )}
+
       {usarGrade ? (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {celulas.map((c) => (
@@ -277,7 +330,7 @@ export function ComponenteHeatmap({
               key={c.c}
               celula={c}
               selecionado={filtro === c.c}
-              onSelecionar={selecionar ? () => selecionar(c.c) : undefined}
+              onSelecionar={selecionar && c.lacunas > 0 ? () => selecionar(c.c) : undefined}
             />
           ))}
         </ul>

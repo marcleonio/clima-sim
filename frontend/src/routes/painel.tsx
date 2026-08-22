@@ -98,7 +98,22 @@ function PainelPage() {
     for (const [chave, valor] of Object.entries(proximo)) {
       if (!valor || valor === "todos" || valor === "todas") delete proximo[chave];
     }
-    void navegar({ search: proximo as BuscaPainel });
+    /*
+     * resetScroll: false é o que faz o clique parecer que funciona.
+     *
+     * O roteador trata mudança de parâmetro de busca como navegação para uma
+     * página nova e restaura a rolagem para o topo. Medido antes da correção:
+     * no painel, scroll 508 -> 0; no dossiê, 997 -> 0. O usuário clicava no que
+     * estava na frente dele, a página saltava, e o resultado — que nasce abaixo
+     * — ficava mais longe ainda. Do lado de quem olha, isso é indistinguível de
+     * "não fez nada".
+     *
+     * replace: true entra junto porque a URL aqui é ESTADO DE FILTRO, não
+     * navegação. Sem ele, cada toque num filtro empilha uma entrada no
+     * histórico e o botão "voltar" vira uma máquina de desfazer filtro a
+     * filtro, em vez de levar de volta à tela anterior.
+     */
+    void navegar({ search: proximo as BuscaPainel, resetScroll: false, replace: true });
   };
 
   const selecionados = useMemo(
@@ -217,7 +232,7 @@ function PainelPage() {
             <Button
               variant="ghost"
               className="h-11"
-              onClick={() => void navegar({ search: { perfil } })}
+              onClick={() => void navegar({ search: { perfil }, resetScroll: false, replace: true })}
             >
               <RotateCcw className="mr-1.5 size-3.5" aria-hidden />
               Limpar

@@ -146,6 +146,7 @@ function AchadosPage() {
       setAnterior(null);
       setConsulta("");
       campoBusca.current?.blur();
+      // Abrir outro ente é navegação de verdade — aqui o topo É o lugar certo.
       void navegar({ search: { ente: nome, perfil } });
     },
     [navegar, perfil],
@@ -382,6 +383,9 @@ function AchadosPage() {
                     perfil,
                     ...(componente ? { comp: componente } : {}),
                   },
+                  // ver a nota em routes/painel.tsx: filtro não é navegação
+                  resetScroll: false,
+                  replace: true,
                 })
               }
             />
@@ -393,7 +397,13 @@ function AchadosPage() {
               nomeEnte={enteAtivo}
               componente={comp ?? null}
               nomesComponentes={META.componentes}
-              onLimparComponente={() => void navegar({ search: { ente: enteAtivo, perfil } })}
+              onLimparComponente={() =>
+                void navegar({
+                  search: { ente: enteAtivo, perfil },
+                  resetScroll: false,
+                  replace: true,
+                })
+              }
               onAlternar={alternar}
               onSelecionarVarios={selecionarVarios}
             />
@@ -420,6 +430,8 @@ function AchadosPage() {
                         perfil: e.target.value as Perfil,
                         ...(comp ? { comp } : {}),
                       },
+                      resetScroll: false,
+                      replace: true,
                     })
                   }
                   className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm font-semibold"
