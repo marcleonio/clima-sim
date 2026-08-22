@@ -21,13 +21,13 @@ import { Card, CardContent } from "@/components/ui/card";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ClimaSim — Simulador preditivo de políticas climáticas" },
+      { title: "ClimaSim — do dado público à peça de cobrança" },
       {
         name: "description",
         content:
-          "ClimaSim transforma os dados do Painel ClimaBrasil em uma engine preditiva: simule financiamento, governança e execução de políticas e veja o impacto climático projetado do mandato.",
+          "ClimaSim transforma os pareceres de auditoria do Painel ClimaBrasil em ofícios, requerimentos e planos de providências prontos para protocolar.",
       },
-      { property: "og:title", content: "ClimaSim — Simulador preditivo de políticas climáticas" },
+      { property: "og:title", content: "ClimaSim — do dado público à peça de cobrança" },
       {
         property: "og:description",
         content:
@@ -125,7 +125,7 @@ function Landing() {
             O Painel ClimaBrasil mostra o passado. O ClimaSim projeta o próximo mandato.
           </h1>
           <p className="mt-5 max-w-2xl text-base text-primary-foreground/85 md:text-lg">
-            Plataforma de inteligência preditiva que consome os dados oficiais de auditoria
+            Plataforma de evidência que consome os dados oficiais de auditoria
             climática e responde à pergunta que todo gestor faz: onde aplicar o próximo milhão de
             reais para gerar o maior impacto climático?
           </p>
@@ -149,7 +149,7 @@ function Landing() {
               ["3", "eixos analisados"],
               ["4", "anos de projeção"],
               ["27+", "entes federativos"],
-              ["OLS", "modelo preditivo"],
+              ["Multicritério", "priorização decomponível"],
             ].map(([v, l]) => (
               <div key={l}>
                 <dt className="font-display text-3xl text-primary-foreground">{v}</dt>

@@ -11,19 +11,18 @@ export const Route = createFileRoute("/metodologia")({
       {
         name: "description",
         content:
-          "Como o ClimaSim usa os dados do Painel ClimaBrasil como baseline e aplica regressão múltipla (OLS) para projetar cenários climáticos de estados e municípios.",
+          "Como o ClimaSim transforma os pareceres de auditoria do Painel ClimaBrasil em achados, priorização multicritério e peças administrativas prontas para protocolar.",
       },
       { property: "og:title", content: "Metodologia — ClimaSim" },
       {
         property: "og:description",
         content:
-          "Dataset oficial agregado, modelo OLS, matriz de impacto cruzado e interpolação temporal do mandato.",
+          "Base oficial do TCU, escala de quatro degraus, priorização multicritério decomponível e trajetória por aritmética da escala.",
       },
       { property: "og:type", content: "article" },
       { property: "og:url", content: "https://policy-effect-simulator.lovable.app/metodologia" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://policy-effect-simulator.lovable.app/metodologia" }],
   }),
   component: Metodologia,
 });
@@ -31,27 +30,27 @@ export const Route = createFileRoute("/metodologia")({
 const ETAPAS = [
   {
     Icon: Database,
-    titulo: "1. Baseline oficial",
+    titulo: "1. A base oficial, inteira",
     texto:
-      "O dataset do Painel ClimaBrasil é agregado por ente federativo e vira o baseline real das notas de Financiamento, Governança e Execução de Políticas de estados e municípios.",
+      "O CSV do Painel ClimaBrasil traz 2.295 avaliações em 51 entes — 26 estados, 24 capitais e o Distrito Federal —, cada uma com o parecer técnico que o auditor do tribunal de contas escreveu. É esse parecer, e não a nota, que o produto entrega.",
   },
   {
     Icon: Sigma,
-    titulo: "2. Regressão múltipla (OLS)",
+    titulo: "2. A escala de quatro degraus",
     texto:
-      "Uma engine estatística de mínimos quadrados ordinários estima como variações percentuais em cada eixo se propagam sobre o índice climático geral do ente.",
+      "Cada requisito recebe Sem progresso, Estágio inicial, Estágio intermediário ou Estágio avançado, valendo 0, 1/3, 2/3 e 1. O índice do ente é a média desses valores. Um requisito em “Sem progresso” é o que chamamos de achado.",
   },
   {
     Icon: Workflow,
-    titulo: "3. Matriz de impacto cruzado",
+    titulo: "3. Priorização multicritério",
     texto:
-      "Cada ajuste gera efeitos colaterais nos demais eixos — executar sem financiar, por exemplo, derruba a nota financeira. Esses efeitos viram trade-offs classificados como ganho, perda, alerta ou neutro.",
+      "Cada par ente × componente recebe um índice por soma ponderada de cinco critérios: déficit, exposição populacional, vínculo normativo, alavancagem e precedente disponível. A soma ponderada foi escolhida por ser a única que se decompõe linearmente — toda prioridade mostra a contribuição de cada critério.",
   },
   {
     Icon: ArrowRight,
-    titulo: "4. Interpolação do mandato",
+    titulo: "4. Trajetória de regularização",
     texto:
-      "O resultado é distribuído ano a ano até o fim do ciclo de governo, produzindo séries temporais e KPIs de absorção, ROI climático, maturidade relativa e risco de descontinuidade.",
+      "Como o índice é a média dos degraus, o efeito de fazer um requisito subir um degrau é aritmética exata — sem modelo estatístico e sem parâmetro estimado. Qualquer pessoa reproduz o número com a planilha na mão.",
   },
 ];
 
@@ -63,8 +62,9 @@ function Metodologia() {
       </p>
       <h1 className="mt-3 text-4xl">Metodologia do ClimaSim</h1>
       <p className="mt-4 text-muted-foreground">
-        A plataforma não inventa dados: parte do diagnóstico oficial e o projeta no tempo. Abaixo, o
-        caminho completo do dado bruto até a projeção exibida no simulador.
+        A plataforma não inventa dados. Todo texto exibido ou vem da fonte oficial — parecer da
+        auditoria, base normativa, dados do ente — ou é fórmula administrativa padrão. Abaixo, o
+        caminho completo do CSV bruto até a peça pronta para protocolar.
       </p>
 
       <div className="mt-10 grid gap-5">
@@ -83,23 +83,33 @@ function Metodologia() {
         ))}
       </div>
 
-      <h2 className="mt-14 text-2xl">Indicadores calculados</h2>
+      <h2 className="mt-14 text-2xl">Limites que assumimos</h2>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Um produto de controle externo vale pelo que se recusa a afirmar.
+      </p>
       <ul className="mt-4 grid gap-3 text-sm text-muted-foreground">
         <li>
-          <strong className="text-foreground">Capacidade de absorção</strong> — quanto do recurso
-          adicional o ente consegue de fato executar, evitando gargalos de caixa.
+          <strong className="text-foreground">Não medimos risco físico.</strong> A formulação correta
+          é “vive sob jurisdição de ente com lacuna no requisito X”, nunca “está em risco”. A métrica
+          mede lacuna de governança.
         </li>
         <li>
-          <strong className="text-foreground">ROI climático e fator de alavancagem</strong> — retorno
-          esperado por ponto percentual investido em cada eixo.
+          <strong className="text-foreground">Não afirmamos causalidade.</strong> A avaliação de 2025
+          é posterior aos eventos climáticos citados; coincidência documentada não é causa.
         </li>
         <li>
-          <strong className="text-foreground">Maturidade relativa</strong> — posição do ente frente
-          aos pares da mesma esfera.
+          <strong className="text-foreground">Não estimamos custo.</strong> Não há dado na base que
+          diga quanto custa fazer um requisito subir um degrau, e por isso o produto não projeta
+          orçamento nem retorno de investimento.
         </li>
         <li>
-          <strong className="text-foreground">Risco de descontinuidade</strong> — probabilidade de a
-          política perder tração ao longo do mandato.
+          <strong className="text-foreground">Os pesos da priorização são escolha, não descoberta.</strong>{" "}
+          Ficam visíveis, editáveis, e são registrados em toda peça emitida.
+        </li>
+        <li>
+          <strong className="text-foreground">O vínculo normativo pede curadoria jurídica.</strong> A
+          classificação das bases legais entre vinculante e programática é uma leitura de primeira
+          ordem, e está marcada como tal no código.
         </li>
       </ul>
 
