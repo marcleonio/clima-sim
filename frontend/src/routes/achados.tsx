@@ -35,6 +35,8 @@ import {
   type TipoDocumento,
 } from "@/lib/documentos";
 import { insightsDoEnte } from "@/lib/agente/insights";
+import { regiaoDe } from "@/lib/territorio";
+import { paragrafoSazonal } from "@/lib/enso";
 import { pontesPara } from "@/lib/grafo";
 import { carregarDossie, ENTES, META, NOMES_ENTES, taxasDosOutros } from "@/lib/dados";
 import referenciasBrutas from "@/data/referencias.json";
@@ -220,6 +222,7 @@ function AchadosPage() {
           emitidoEm: new Date(),
           totalDeEntes: META.total,
           trajetoria,
+          sazonal: paragrafoSazonal(enteAtivo, regiaoDe(ente.id)),
         }),
       );
     },

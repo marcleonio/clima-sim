@@ -120,7 +120,7 @@ export function DocumentoDialog({
                     {quadro.achados}
                   </p>
                   <p className="mt-1 font-sans text-[11px] leading-tight text-neutral-600">
-                    achados nesta peça, de {quadro.requisitos} requisitos avaliados
+                    itens nesta peça, de {quadro.requisitos} avaliados
                   </p>
                 </div>
                 <div>
@@ -145,7 +145,7 @@ export function DocumentoDialog({
                     {formatarPercentual(quadro.maturidade)}
                   </p>
                   <p className="mt-1 font-sans text-[11px] leading-tight text-neutral-600">
-                    índice de maturidade
+                    de pontuação
                   </p>
                 </div>
               </div>
@@ -201,7 +201,7 @@ export function DocumentoDialog({
                 <h3 className="border-b border-neutral-300 pb-1 font-sans text-[13px] font-bold uppercase tracking-wider">
                   {bloco.eixo}
                   <span className="ml-2 font-normal normal-case tracking-normal text-neutral-500">
-                    {bloco.achados.length} {bloco.achados.length === 1 ? "achado" : "achados"}
+                    {bloco.achados.length} {bloco.achados.length === 1 ? "item" : "itens"}
                   </span>
                 </h3>
 
@@ -249,6 +249,16 @@ export function DocumentoDialog({
                 {p}
               </p>
             ))}
+
+            {/* ---------------- contexto sazonal ---------------- */}
+            {documento.sazonal && (
+              <section className="mt-7 break-inside-avoid border-l-[3px] border-neutral-400 pl-4">
+                <h3 className="font-sans text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                  Contexto sazonal
+                </h3>
+                <p className="mt-1.5 text-[0.92rem]">{documento.sazonal}</p>
+              </section>
+            )}
 
             {/* ---------------- trajetória ---------------- */}
             {documento.trajetoria && (

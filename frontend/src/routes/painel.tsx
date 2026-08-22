@@ -9,6 +9,7 @@ import {
   FaixaDistribuicao,
 } from "@/components/graficos/formas";
 import { BarraFiltros } from "@/components/painel/barra-filtros";
+import { FaixaEnso } from "@/components/painel/faixa-enso";
 import { GrafoSemelhanca } from "@/components/painel/grafo-semelhanca";
 import { LegendaMapa, MapaBrasil } from "@/components/painel/mapa-brasil";
 import { PainelEnte } from "@/components/painel/painel-ente";
@@ -467,6 +468,10 @@ function PainelPage() {
         que a pessoa veio buscar. Quem chega ao painel quer saber onde está o
         problema; quem rola até aqui quer saber quem mais tem o mesmo.
       */}
+      <div className="mt-6">
+        <FaixaEnso />
+      </div>
+
       <div className="mt-6">
         <GrafoSemelhanca
           realcado={realcado}

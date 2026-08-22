@@ -132,6 +132,11 @@ export interface ContextoDocumento {
    * Vem pronta de `descreverTrajetoria`: este módulo não calcula projeção.
    */
   trajetoria?: string | null;
+  /**
+   * Parágrafo de contexto sazonal, pronto de `paragrafoSazonal`. Este módulo
+   * não sabe nada sobre ENSO — recebe o texto com a ressalva já embutida.
+   */
+  sazonal?: string | null;
 }
 
 /** O quadro de uma página que abre a peça, antes do corpo. */
@@ -190,6 +195,8 @@ export interface DocumentoGerado {
   blocos: BlocoEixo[];
   /** Projeção da escala oficial, quando houver seleção. */
   trajetoria: string | null;
+  /** Contexto de fase climática, quando o ente está na região associada. */
+  sazonal: string | null;
   timbre: Timbre;
   /** O que o código de conferência prova, em português. */
   conferencia: string;
@@ -265,6 +272,7 @@ export function gerarDocumento(
     quadro,
     blocos,
     trajetoria: contexto.trajetoria ?? null,
+    sazonal: contexto.sazonal ?? null,
     timbre: TIMBRE_POR_TIPO[tipo],
     // "SHA" sugere criptografia, que não é o caso — é djb2, para conferência.
     // O que vale dizer é o que o código prova, não como ele é calculado.
@@ -278,7 +286,7 @@ export function gerarDocumento(
     ? `entre os ${contexto.totalDeEntes} entes avaliados no país`
     : "entre os entes avaliados no país";
   const diagnostico =
-    `O ente apresenta ${ente.lac} de ${ente.tot} requisitos sem progresso (${taxa}), ` +
+    `O ente apresenta ${ente.lac} de ${ente.tot} itens sem progresso (${taxa}), ` +
     `ocupando a ${ente.rank}ª posição em fragilidade ${universo}.`;
 
   switch (tipo) {
@@ -358,7 +366,7 @@ export function gerarDocumento(
         fundamento: "Requerimento de informação, na forma regimental",
         paragrafos: [
           "Requeiro, na forma regimental, que seja oficiado ao Poder Executivo solicitando informações sobre as lacunas de ação climática identificadas na avaliação consolidada no Painel ClimaBrasil, do Tribunal de Contas da União.",
-          `Justificativa. A avaliação técnica registrou ${ente.lac} requisitos sem qualquer ação demonstrada neste ente, o equivalente a ${taxa} do total avaliado` +
+          `Justificativa. A avaliação técnica registrou ${ente.lac} itens sem qualquer ação demonstrada neste ente, o equivalente a ${taxa} do total avaliado` +
             (populacao ? `, em jurisdição com população estimada de ${populacao}` : "") +
             ". Requisitos de defesa civil e adaptação climática apoiam-se em obrigações legais, entre elas a Lei nº 12.608/2012, que institui a Política Nacional de Proteção e Defesa Civil.",
           "Diante da relevância da matéria para a proteção da população, requer-se manifestação do Executivo sobre as providências em curso.",

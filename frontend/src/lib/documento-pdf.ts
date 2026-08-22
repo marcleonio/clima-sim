@@ -112,10 +112,10 @@ export async function baixarDocumentoPdf(doc: DocumentoGerado): Promise<void> {
 
   const q = doc.quadro;
   const colunas = [
-    [String(q.achados), `achados nesta peça, de ${q.requisitos} avaliados`],
+    [String(q.achados), `itens nesta peça, de ${q.requisitos} avaliados`],
     [String(q.riscoDeVida), "em defesa civil e adaptação"],
     [`${q.posicao}ª`, q.totalDeEntes ? `em fragilidade entre ${q.totalDeEntes}` : "em fragilidade"],
-    [formatarPercentual(q.maturidade), "índice de maturidade"],
+    [formatarPercentual(q.maturidade), "de pontuação"],
   ] as const;
 
   const larguraColuna = largura / colunas.length;
@@ -158,7 +158,7 @@ export async function baixarDocumentoPdf(doc: DocumentoGerado): Promise<void> {
     pdf.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(TINTA[0], TINTA[1], TINTA[2]);
     pdf.text(
       `${bloco.eixo.toUpperCase()}   ${bloco.achados.length} ${
-        bloco.achados.length === 1 ? "achado" : "achados"
+        bloco.achados.length === 1 ? "item" : "itens"
       }`,
       MARGEM,
       y,
@@ -212,6 +212,14 @@ export async function baixarDocumentoPdf(doc: DocumentoGerado): Promise<void> {
   for (const p of doc.paragrafos.slice(3)) {
     paragrafo(p);
     y += 6;
+  }
+
+  // ---------------- contexto sazonal
+  if (doc.sazonal) {
+    y += 10;
+    quebra(60);
+    rotulo("Contexto sazonal");
+    paragrafo(doc.sazonal);
   }
 
   // ---------------- trajetória
