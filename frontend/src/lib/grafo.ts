@@ -10,6 +10,8 @@ import bruto from "@/data/grafo.json";
 
 export interface NoGrafo {
   nome: string;
+  /** Rótulo para o desenho: sigla no estado, nome da cidade na capital. */
+  curto: string;
   x: number;
   y: number;
   comunidade: number;
@@ -38,6 +40,20 @@ export interface Comunidade {
   id: number;
   entes: string[];
   tamanho: number;
+  /**
+   * O que distingue o grupo dos outros — o componente de maior DESVIO em
+   * relação à média dos grupos, não o de maior déficit absoluto. `tipo: "forte"`
+   * quando o grupo não se destaca por fragilidade nenhuma.
+   */
+  caracter: {
+    eixo: string | null;
+    marca: string | null;
+    componente: string | null;
+    desvio: number;
+    tipo: "fragil" | "forte" | "misto";
+  } | null;
+  /** Casco convexo afastado, para o contorno que agrupa sem gastar cor. */
+  contorno: { x: number; y: number }[] | null;
   pontuacaoMedia: number;
   perfil: { c: string; nome: string; deficit: number }[];
   pontes: Ponte[];

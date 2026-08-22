@@ -54,6 +54,14 @@ const ALTURA = 560;
 /** Uma comunidade menor que isto não sustenta generalização. */
 const MINIMO_PARA_COMUNIDADE = 3;
 
+/** Sigla da UF pelo código IBGE, para o rótulo curto dos estados no desenho. */
+const SIGLA = {
+  "11": "RO", "12": "AC", "13": "AM", "14": "RR", "15": "PA", "16": "AP", "17": "TO",
+  "21": "MA", "22": "PI", "23": "CE", "24": "RN", "25": "PB", "26": "PE", "27": "AL",
+  "28": "SE", "29": "BA", "31": "MG", "32": "ES", "33": "RJ", "35": "SP",
+  "41": "PR", "42": "SC", "43": "RS", "50": "MS", "51": "MT", "52": "GO", "53": "DF",
+};
+
 // ------------------------------------------------------------------ métrica
 
 function cosseno(a, b) {
@@ -144,6 +152,103 @@ function posicionar(nomes, arestas, comunidadeDe, quantasComunidades) {
   return pos;
 }
 
+
+// ------------------------------------------------------------------ contorno
+
+/**
+ * Casco convexo (Andrew, monotone chain), afastado para fora.
+ *
+ * A identidade da comunidade é carregada pela POSIÇÃO — cinco matizes
+ * categóricos não passam na validação de daltonismo. Só que posição sozinha
+ * exige que o leitor infira o agrupamento; um contorno tênue faz o trabalho sem
+ * gastar o canal de cor, que fica livre para a rampa de pontuação.
+ */
+function casco(pontos, folga = 26) {
+  if (pontos.length < 3) return null;
+
+  const p = [...pontos].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cruz = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+  const baixo = [];
+  for (const ponto of p) {
+    while (baixo.length >= 2 && cruz(baixo[baixo.length - 2], baixo[baixo.length - 1], ponto) <= 0) {
+      baixo.pop();
+    }
+    baixo.push(ponto);
+  }
+
+  const cima = [];
+  for (const ponto of [...p].reverse()) {
+    while (cima.length >= 2 && cruz(cima[cima.length - 2], cima[cima.length - 1], ponto) <= 0) {
+      cima.pop();
+    }
+    cima.push(ponto);
+  }
+
+  const anel = [...baixo.slice(0, -1), ...cima.slice(0, -1)];
+  if (anel.length < 3) return null;
+
+  // Afasta cada vértice do centroide, para o contorno não encostar nos nós.
+  const cx = anel.reduce((s, q) => s + q.x, 0) / anel.length;
+  const cy = anel.reduce((s, q) => s + q.y, 0) / anel.length;
+
+  return anel.map((q) => {
+    const d = Math.hypot(q.x - cx, q.y - cy) || 1;
+    return {
+      x: Number((q.x + ((q.x - cx) / d) * folga).toFixed(1)),
+      y: Number((q.y + ((q.y - cy) / d) * folga).toFixed(1)),
+    };
+  });
+}
+
+/**
+ * O caráter do grupo: o componente que MAIS O DISTINGUE dos outros grupos.
+ *
+ * A primeira versão usava simplesmente o componente de maior déficit, e três
+ * dos cinco grupos saíram chamados "Mobilização de investimentos privados" —
+ * porque F3 é o eixo mais frágil do país inteiro e lidera em quase todo lugar.
+ * Um rótulo que se repete não nomeia nada.
+ *
+ * A regra certa é o DESVIO: o componente em que este grupo está mais distante
+ * da média dos grupos. Continua derivado do dado, sem batismo à mão, e agora
+ * responde à pergunta que o leitor faz de fato — "o que este grupo tem de
+ * diferente?".
+ */
+function caracterizar(deficitPorComponente, mediaPorComponente, nomes, eixoDe) {
+  const desvios = Object.entries(deficitPorComponente)
+    .map(([c, d]) => ({ c, desvio: d - (mediaPorComponente[c] ?? 0), deficit: d }))
+    .sort((a, b) => b.desvio - a.desvio || a.c.localeCompare(b.c));
+
+  const marcante = desvios[0];
+  if (!marcante) return { eixo: null, marca: null, componente: null, desvio: 0, tipo: "misto" };
+
+  /*
+   * Um grupo pode não se destacar por fragilidade nenhuma — é o caso do grupo
+   * maduro, que fica abaixo da média em todos os componentes. Chamá-lo pelo
+   * "maior déficit" seria descrevê-lo pelo que ele NÃO é. Nesse caso o que o
+   * distingue é a ausência de ponto fraco marcante, e o rótulo diz isso.
+   */
+  if (marcante.desvio < 5) {
+    const melhor = desvios[desvios.length - 1];
+    return {
+      componente: melhor ? melhor.c : null,
+      marca: "Sem fragilidade marcante",
+      eixo: melhor ? eixoDe(melhor.c) : null,
+      desvio: melhor ? Math.round(-melhor.desvio) : 0,
+      tipo: "forte",
+    };
+  }
+
+  return {
+    componente: marcante.c,
+    marca: nomes[marcante.c] ?? marcante.c,
+    eixo: eixoDe(marcante.c),
+    /** Quantos pontos percentuais acima da média dos grupos. */
+    desvio: Math.round(marcante.desvio),
+    tipo: "fragil",
+  };
+}
+
 // ------------------------------------------------------------------ principal
 
 function main() {
@@ -210,6 +315,28 @@ function main() {
 
   const pos = posicionar(nomes, arestas, comunidadeDe, comunidades.length);
 
+  // ---- déficit médio de cada componente, por comunidade e no conjunto
+  const deficitDe = (membros) =>
+    Object.fromEntries(
+      componentes.map((c) => [
+        c,
+        (membros.reduce((s, n) => {
+          const r = indice.entes[n].comps[c];
+          return s + (r && r.t ? 1 - r.m / 100 : 0);
+        }, 0) /
+          membros.length) *
+          100,
+      ]),
+    );
+
+  const deficitPorComunidade = comunidades.map(deficitDe);
+  const mediaPorComponente = Object.fromEntries(
+    componentes.map((c) => [
+      c,
+      deficitPorComunidade.reduce((s, d) => s + d[c], 0) / deficitPorComunidade.length,
+    ]),
+  );
+
   // ---- perfil e pontes de precedente, por comunidade
   const resumoComunidades = comunidades.map((membros, i) => {
     const perfil = componentes
@@ -247,10 +374,21 @@ function main() {
     }
     pontes.sort((a, b) => b.falham - a.falham || a.componente.localeCompare(b.componente));
 
+    const eixoDe = (c) => {
+      for (const n of membros) {
+        const encontrado = (indice.entes[n].achados ?? []).find((a) => a.c === c);
+        if (encontrado) return encontrado.eixo;
+      }
+      // O índice não carrega achados; deduz pelo prefixo do código.
+      return { F: "Financiamento", G: "Governança", P: "Políticas públicas" }[c[0]] ?? "";
+    };
+
     return {
       id: i,
       entes: membros,
       tamanho: membros.length,
+      caracter: caracterizar(deficitPorComunidade[i], mediaPorComponente, indice.meta.componentes, eixoDe),
+      contorno: casco(membros.map((n) => pos[n])),
       pontuacaoMedia:
         Math.round((membros.reduce((s, n) => s + indice.entes[n].mat, 0) / membros.length) * 10) /
         10,
@@ -278,6 +416,17 @@ function main() {
     viewBox: `0 0 ${LARGURA} ${ALTURA}`,
     nos: nomes.map((n) => ({
       nome: n,
+      /*
+       * Rótulo curto para o desenho. Estado vira sigla, capital mantém o nome
+       * da cidade: assim "São Paulo (estado)" e "São Paulo (capital)" deixam de
+       * colidir em dois rótulos idênticos — que era o efeito de simplesmente
+       * remover o sufixo, e apagava justamente a distinção que o produto levou
+       * uma etapa inteira para recuperar.
+       */
+      curto:
+        indice.entes[n].tipo === "Município"
+          ? n.replace(/ \(.*\)/, "")
+          : (SIGLA[String(indice.entes[n].id ?? "").padStart(2, "0").slice(0, 2)] ?? n),
       x: Number(pos[n].x.toFixed(1)),
       y: Number(pos[n].y.toFixed(1)),
       comunidade: comunidadeDe[n],
