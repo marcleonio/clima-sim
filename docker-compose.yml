@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: climaton_backend
     ports:
-      - "8080:8080"
+      - "8080:8080" # Liberado para testes locais da API
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
@@ -20,12 +20,30 @@ services:
       dockerfile: Dockerfile
     container_name: climaton_frontend
     ports:
-      - "3000:3000"
+      - "3000:3000" # Liberado para você acessar diretamente sem erro de SSL
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=http://backend:8080
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - climaton-network
+
+  # Mantemos o proxy configurado de forma amigável para o ambiente local
+  reverse-proxy:
+    image: caddy:2-alpine
+    container_name: climaton_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"   
+      - "443:443" 
+    entrypoint: [
+      "caddy", "reverse-proxy",
+      "--from", "localhost",     # Mudado para localhost (Caddy gera SSL interno automático)
+      "--to", "frontend:3000"
+    ]
+    depends_on:
+      - frontend
     networks:
       - climaton-network
 
