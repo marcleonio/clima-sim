@@ -1,12 +1,11 @@
 climasim.duckdns.org {
-    # Redireciona requisições de API para o backend Java Spring Boot
-    handle /api/* {
-        uri strip_prefix /api
-        reverse_proxy backend:8080
+    # Adiciona os cabeçalhos de CORS permitindo que o GitHub Pages acesse
+    header {
+        Access-Control-Allow-Origin "https://marcleonio.github.io"
+        Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type"
     }
 
-    # Todo o resto vai para o Next.js (frontend)
-    handle {
-        reverse_proxy frontend:3000
-    }
+    # Encaminha o tráfego para o seu frontend Next.js na VPS
+    reverse_proxy frontend:3000
 }
