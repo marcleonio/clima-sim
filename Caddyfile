@@ -1,0 +1,12 @@
+climasim.duckdns.org {
+    # Redireciona requisições de API para o backend Java Spring Boot
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy backend:8080
+    }
+
+    # Todo o resto vai para o Next.js (frontend)
+    handle {
+        reverse_proxy frontend:3000
+    }
+}
