@@ -1,0 +1,6 @@
+// Exemplo de como seu código deve chamar a VPS
+const API_URL = "http://168.138.133:3000"; 
+
+fetch(`${API_URL}/dados-do-climasim`)
+  .then(response => response.json())
+  .then(data => console.log(data));
