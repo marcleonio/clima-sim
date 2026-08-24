@@ -1,42 +1,6 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClimaSim - Painel</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f4f9; color: #333; }
-        .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #0076ff; }
-        #resultado { background: #eee; padding: 10px; border-radius: 4px; margin-top: 10px; font-family: monospace; }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>Painel ClimaSim</h1>
-        <p>Buscando dados da VPS ativa...</p>
-        <div id="resultado">Carregando dados...</div>
-    </div>
-
-    <!-- O código JavaScript DEVE ficar dentro desta tag script abaixo -->
-    <script>
-        // IP corrigido da sua VPS com a porta 3000
-        const API_URL = "https://climasim.duckdns.org";
-
-        fetch(`${API_URL}/`)
-            .then(response => {
-                if (!response.ok) throw new Error('Erro na requisição');
-                return response.json();
-            })
-            .then(data => {
-                // Altera o texto da página com o que veio da VPS
-                document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                document.getElementById('resultado').innerText = "Erro ao conectar na VPS: " + error.message;
-                console.error("Detalhes do erro:", error);
-            });
-    </script>
-</body>
-</html>
+<div class="container">
+    <h1>Painel ClimaSim</h1>
+    <p>Carregando painel da VPS...</p>
+    <!-- O iframe carrega o site inteiro da VPS direto na sua página -->
+    <iframe src="https://climasim.duckdns.org" width="100%" height="400px" style="border:none; border-radius: 4px;"></iframe>
+</div>
