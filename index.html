@@ -22,9 +22,9 @@
     <!-- O código JavaScript DEVE ficar dentro desta tag script abaixo -->
     <script>
         // IP corrigido da sua VPS com a porta 3000
-        const API_URL = "http://168.138.133.50:3000"; 
+        const API_URL = "https://168.138.133.50";
 
-        fetch(`${API_URL}/dados-do-climasim`)
+        fetch(`${API_URL}/`)
             .then(response => {
                 if (!response.ok) throw new Error('Erro na requisição');
                 return response.json();
